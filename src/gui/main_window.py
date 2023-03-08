@@ -1,7 +1,12 @@
 from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Signal, Slot
 from src.backend import Backend
 
+
 class MainWindow(QtWidgets.QMainWindow):
+
+    camera_sel_cb_add_items_signal = Signal(int)
+
     def __init__(self, backend: Backend):
         super().__init__()
 
@@ -98,6 +103,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStatusBar(self.statusbar)
 
         QtCore.QMetaObject.connectSlotsByName(self)
+        self.init_backend()
+        self.connect_signals()
     # setupUi
 
     def retranslate_ui(self):
@@ -108,5 +115,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
+
+    def connect_signals(self):
+        # self.camera_select_cb.activated.connect(self.camera_select_cb_action)
+        self.connect_btn.clicked.connect(self.backend.find_aviable_cameras)
+        self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
+
+
+    def init_backend(self):
+        self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
+
+
+    def camera_select_cb_add_items(self, num_of_cameras: int):
+        self.camera_select_cb.clear()
+        self.camera_select_cb.addItems([str(item) for item in range(num_of_cameras)])
+
     # retranslateUi
 
