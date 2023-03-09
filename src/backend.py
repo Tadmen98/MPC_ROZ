@@ -28,4 +28,5 @@ class Backend:
                 break
             else:
                 num_of_cameras += 1
+            cap.release()
         self.camera_sel_cb_add_items_signal.emit(num_of_cameras)
