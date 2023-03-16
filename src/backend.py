@@ -34,7 +34,7 @@ class Backend:
 
     def connect_camera(self, camera_index):
         self.camera.connect_camera(camera_index)
-        self.camera.run()
+        self.camera.start()
 
     def disconnect_camera(self):
         self.camera.stop()

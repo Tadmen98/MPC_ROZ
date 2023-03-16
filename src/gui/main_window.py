@@ -1,5 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal, Slot, Qt
+from PySide6.QtGui import QPixmap, QImage
+import cv2
 from src.backend import Backend
 
 
@@ -125,16 +127,31 @@ class MainWindow(QtWidgets.QMainWindow):
     def connect_signals(self):
         # self.camera_select_cb.activated.connect(self.camera_select_cb_action)
         self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
+        self.connect_btn.clicked.connect(lambda: self.backend.connect_camera(
+            self.camera_select_cb.currentIndex()
+        ))
+        self.disconnect_btn.clicked.connect(self.backend.disconnect_camera)
         self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
 
 
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
+        self.backend.camera.image_update.connect(self.camera_stream_update_slot)
 
 
     def camera_select_cb_add_items(self, num_of_cameras: int):
         self.camera_select_cb.clear()
         self.camera_select_cb.addItems([str(item) for item in range(num_of_cameras)])
 
+    def camera_stream_update_slot(self, img1, img2):
+        image = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        flipped_image = cv2.flip(image, 1)
+        qt_img = QImage(flipped_image.data, flipped_image.shape[1], flipped_image.shape[0],
+                                   QImage.Format_RGB888)
+        scaled_qt_img = qt_img.scaled(320, 240, Qt.KeepAspectRatio)
+        self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+
+    def closeEvent(self, event):
+        self.backend.camera.stop()
     # retranslateUi
 

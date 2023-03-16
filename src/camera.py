@@ -1,9 +1,12 @@
 from PySide6.QtCore import QThread, Signal
+from PySide6.QtGui import QImage
+from PySide6.QtCore import Qt
+import numpy as np
 import cv2
 
 
 class Camera(QThread):
-    ImageUpdate = Signal(int, int)
+    image_update = Signal(np.ndarray, np.ndarray)
 
     def __init__(self):
         self.camera_index = None
@@ -22,8 +25,7 @@ class Camera(QThread):
         while self.ThreadActive:
             ret, frame = self.capture.read()
             if ret:
-                img = cv2.cvtColor(frame, cv2.COLOR_BGR2BGR)
-                print(type(img))
+                self.image_update.emit(frame, frame)
 
     def stop(self):
         self.ThreadActive = False
