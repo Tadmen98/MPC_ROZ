@@ -25,12 +25,14 @@ class Camera(QThread):
         while self.ThreadActive:
             ret, frame = self.capture.read()
             if ret:
-                self.image_update.emit(frame, frame)
+                frame_left, frame_right = np.split(frame, 2, axis=1)
+                self.image_update.emit(frame_left, frame_right)
 
     def stop(self):
         self.ThreadActive = False
         self.camera_index = None
-        self.capture.release()
+        if self.capture is not None:
+            self.capture.release()
         cv2.destroyAllWindows()
         self.capture = None
         self.quit()
