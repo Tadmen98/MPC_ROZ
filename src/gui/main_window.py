@@ -68,27 +68,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_btn = QtWidgets.QPushButton(self.frame_2)
         self.load_btn.setObjectName(u"load_btn")
 
-        self.gridLayout.addWidget(self.load_btn, 2, 2, 1, 1)
+        self.gridLayout.addWidget(self.load_btn, 2, 2, 1, 2)
 
         self.disconnect_btn = QtWidgets.QPushButton(self.frame_2)
         self.disconnect_btn.setObjectName(u"disconnect_btn")
 
-        self.gridLayout.addWidget(self.disconnect_btn, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.disconnect_btn, 2, 0, 1, 2)
 
         self.connect_btn = QtWidgets.QPushButton(self.frame_2)
         self.connect_btn.setObjectName(u"connect_btn")
 
-        self.gridLayout.addWidget(self.connect_btn, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.connect_btn, 1, 0, 1, 2)
 
         self.camera_select_cb = QtWidgets.QComboBox(self.frame_2)
         self.camera_select_cb.setObjectName(u"camera_select_cb")
 
         self.gridLayout.addWidget(self.camera_select_cb, 0, 0, 1, 1)
 
+        self.find_all_cameras_btn = QtWidgets.QPushButton(self.frame_2)
+        self.find_all_cameras_btn.setObjectName(u"find_all_cameras_btn")
+
+        self.gridLayout.addWidget(self.find_all_cameras_btn, 0, 1, 1, 1)
+
         self.method_cb = QtWidgets.QComboBox(self.frame_2)
         self.method_cb.setObjectName(u"method_cb")
 
-        self.gridLayout.addWidget(self.method_cb, 0, 2, 1, 1)
+        self.gridLayout.addWidget(self.method_cb, 0, 2, 1, 2)
 
 
         self.verticalLayout.addWidget(self.frame_2)
@@ -115,10 +120,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
+        self.find_all_cameras_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Find all cameras", None))
 
     def connect_signals(self):
         # self.camera_select_cb.activated.connect(self.camera_select_cb_action)
-        self.connect_btn.clicked.connect(self.backend.find_aviable_cameras)
+        self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
         self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
 
 

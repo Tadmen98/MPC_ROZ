@@ -23,7 +23,7 @@ class Backend:
         num_of_cameras = 0
         for i in range(10):
             cap = cv2.VideoCapture(i)
-            if not cap.read()[0]:
+            if not cap.isOpened():
                 break
             else:
                 num_of_cameras += 1
