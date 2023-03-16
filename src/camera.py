@@ -27,4 +27,9 @@ class Camera(QThread):
 
     def stop(self):
         self.ThreadActive = False
+        self.camera_index = None
+        self.capture.release()
+        cv2.destroyAllWindows()
+        self.capture = None
+        self.quit()
 
