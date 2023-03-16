@@ -18,8 +18,7 @@ class Backend:
     def __init__(self):
         self.camera_sel_cb_add_items_signal = None
 
-    # TODO: make it threaded and create signal to signal number of cameras
-    # @threaded
+    @threaded
     def find_aviable_cameras(self):
         num_of_cameras = 0
         for i in range(10):
