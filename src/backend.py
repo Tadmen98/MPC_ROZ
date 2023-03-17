@@ -24,12 +24,11 @@ class Backend(QtCore.QObject):
 
     
     def get_model(self):
-        """!@brief Opens file dialog for user to set path to save frames.
-        @details Method is called by Save Location button. Path is written to 
-        the label next to the button and can be further modified.
+        """Opens file dialog for user to select stl model.Method
+        is called by Load model button.
         """
 
-        #Open file dialog for choosing a folder
+        #Open file dialog for choosing a file
         name = QtWidgets.QFileDialog.getOpenFileName() 
         self.load_mesh(name)
 
