@@ -13,11 +13,12 @@ class Camera(QThread):
         self.capture = None
         super().__init__()
 
-    def connect_camera(self, camera_index : int):
+    def choose_camera(self, camera_index : int):
         self.camera_index = camera_index
-        self.capture = cv2.VideoCapture(self.camera_index)
+        # self.capture = cv2.VideoCapture(self.camera_index)
 
     def run(self):
+        self.capture = cv2.VideoCapture(self.camera_index)
         if self.capture is None:
             self.ThreadActive = False
             return False

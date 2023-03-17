@@ -32,8 +32,13 @@ class Backend:
             cap.release()
         self.camera_sel_cb_add_items_signal.emit(num_of_cameras)
 
+    @threaded
     def connect_camera(self, camera_index):
-        self.camera.connect_camera(camera_index)
+        self.camera.stop()
+        while self.camera.isRunning():
+            pass
+            # print("still running")
+        self.camera.choose_camera(camera_index)
         self.camera.start()
 
     def disconnect_camera(self):
