@@ -3,19 +3,6 @@ from src.backend import Backend
 import numpy as np
 from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem
 from stl import mesh
-from threading import Thread
-
-def threaded(fn):
-    """To use as decorator to make a function call threaded.
-    Needs import
-    from threading import Thread"""
-
-    def wrapper(*args, **kwargs):
-        thread = Thread(target=fn, args=args, kwargs=kwargs)
-        thread.start()
-        return thread
-
-    return wrapper
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, backend: Backend):
@@ -127,7 +114,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def connect_signals(self):
         self.backend.update_model_signal.connect(self.update_model_slot)
         self.load_btn.clicked.connect(self.backend.get_model)
-
 
     def update_model_slot(self, mesh_data : MeshData):
         model_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
