@@ -1,22 +1,25 @@
-from PySide6.QtWidgets import QMainWindow
 from PySide6 import QtWidgets, QtCore, QtGui
 from src.backend import Backend
+from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtCore import Signal, Slot, Qt
 import numpy as np
 from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem
 from stl import mesh
+import cv2
+from src.backend import Backend
 
-class MainWindow(QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
+    
+    camera_sel_cb_add_items_signal = Signal(int)
 
-    def __init__(self, backend):
+    def __init__(self, backend: Backend):
         super().__init__()
 
         self.backend = backend
 
         self.setup_ui()
-
-    def setup_ui(self):
-        pass
         self.retranslate_ui()
+        self.init_backend()
         self.connect_signals()
         
     def setup_ui(self):
@@ -87,6 +90,11 @@ class MainWindow(QMainWindow):
 
         self.gridLayout.addWidget(self.camera_select_cb, 0, 0, 1, 1)
 
+        self.find_all_cameras_btn = QtWidgets.QPushButton(self.frame_2)
+        self.find_all_cameras_btn.setObjectName(u"find_all_cameras_btn")
+
+        self.gridLayout.addWidget(self.find_all_cameras_btn, 0, 1, 1, 1)
+
         self.method_cb = QtWidgets.QComboBox(self.frame_2)
         self.method_cb.setObjectName(u"method_cb")
 
@@ -105,7 +113,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statusbar)
 
         QtCore.QMetaObject.connectSlotsByName(self)
-    # setupUi
+   
 
     def retranslate_ui(self):
         self.setWindowTitle(QtCore.QCoreApplication.translate("MainWindow", u"MPC-ROZ Projekt", None))
@@ -114,20 +122,28 @@ class MainWindow(QMainWindow):
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
-    # retranslateUi
+        self.find_all_cameras_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Find all cameras", None))
+
+        
 
     def connect_signals(self):
-        # self.camera_select_cb.activated.connect(self.camera_select_cb_action)
+        self.backend.update_model_signal.connect(self.update_model_slot)
+        self.load_btn.clicked.connect(self.backend.get_model)
         self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
         self.connect_btn.clicked.connect(lambda: self.backend.connect_camera(
             self.camera_select_cb.currentIndex()
         ))
         self.disconnect_btn.clicked.connect(self.backend.disconnect_camera)
         self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
-        
-        self.backend.update_model_signal.connect(self.update_model_slot)
-        self.load_btn.clicked.connect(self.backend.get_model)
 
+
+    def update_model_slot(self, mesh_data : MeshData):
+        model_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
+        
+        self.viewer_3D.clear()
+        self.viewer_3D.addItem(model_mesh)
+
+        self.viewer_3D.show()
 
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
@@ -149,11 +165,4 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.backend.camera.stop()
 
-    def update_model_slot(self, mesh_data : MeshData):
-        model_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
-        
-        self.viewer_3D.clear()
-        self.viewer_3D.addItem(model_mesh)
-
-        self.viewer_3D.show()
 
