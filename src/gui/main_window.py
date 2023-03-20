@@ -153,5 +153,4 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.backend.camera.stop()
-    # retranslateUi
 
