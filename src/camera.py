@@ -15,7 +15,6 @@ class Camera(QThread):
 
     def choose_camera(self, camera_index : int):
         self.camera_index = camera_index
-        # self.capture = cv2.VideoCapture(self.camera_index)
 
     def run(self):
         self.capture = cv2.VideoCapture(self.camera_index)
