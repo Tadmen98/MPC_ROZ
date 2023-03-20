@@ -1,16 +1,21 @@
+from PySide6.QtWidgets import QMainWindow
 from PySide6 import QtWidgets, QtCore, QtGui
 from src.backend import Backend
 import numpy as np
 from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem
 from stl import mesh
 
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, backend: Backend):
+class MainWindow(QMainWindow):
+
+    def __init__(self, backend):
         super().__init__()
 
         self.backend = backend
 
         self.setup_ui()
+
+    def setup_ui(self):
+        pass
         self.retranslate_ui()
         self.connect_signals()
         
