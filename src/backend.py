@@ -37,7 +37,7 @@ class Backend:
         self.camera.stop()
         while self.camera.isRunning():
             pass
-            # print("still running")
+            # TODO: try stop and pass old object and then create new object
         self.camera.choose_camera(camera_index)
         self.camera.start()
 
