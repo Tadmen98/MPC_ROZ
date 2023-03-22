@@ -73,17 +73,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_btn = QtWidgets.QPushButton(self.frame_2)
         self.load_btn.setObjectName(u"load_btn")
 
-        self.gridLayout.addWidget(self.load_btn, 2, 2, 1, 1)
+        self.gridLayout.addWidget(self.load_btn, 2, 2, 1, 2)
 
         self.disconnect_btn = QtWidgets.QPushButton(self.frame_2)
         self.disconnect_btn.setObjectName(u"disconnect_btn")
 
-        self.gridLayout.addWidget(self.disconnect_btn, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.disconnect_btn, 2, 0, 1, 2)
 
         self.connect_btn = QtWidgets.QPushButton(self.frame_2)
         self.connect_btn.setObjectName(u"connect_btn")
 
-        self.gridLayout.addWidget(self.connect_btn, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.connect_btn, 1, 0, 1, 2)
 
         self.camera_select_cb = QtWidgets.QComboBox(self.frame_2)
         self.camera_select_cb.setObjectName(u"camera_select_cb")
@@ -98,7 +98,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.method_cb = QtWidgets.QComboBox(self.frame_2)
         self.method_cb.setObjectName(u"method_cb")
 
-        self.gridLayout.addWidget(self.method_cb, 0, 2, 1, 1)
+        self.gridLayout.addWidget(self.method_cb, 0, 2, 1, 2)
 
 
         self.verticalLayout.addWidget(self.frame_2)
