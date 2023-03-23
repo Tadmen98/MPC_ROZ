@@ -43,6 +43,8 @@ class Backend(QtCore.QObject):
         points = stl_mesh.points.reshape(-1, 3)
         faces = np.arange(points.shape[0]).reshape(-1, 3)
 
+        # point_cloud = np.asarray(points) # how to get point cloud for object detection
+
         mesh_data = MeshData(vertexes=points, faces=faces)
               
         self.update_model_signal.emit(mesh_data)
