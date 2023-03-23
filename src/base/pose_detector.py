@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
+from pose_detector_base import PoseDetectorBase
 
-class PoseDetector:
+
+class PoseDetector(PoseDetectorBase):
     """
     pose
     """
