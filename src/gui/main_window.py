@@ -75,6 +75,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.gridLayout.addWidget(self.load_btn, 2, 2, 1, 2)
 
+        self.calibrate_btn = QtWidgets.QPushButton(self.frame_2)
+        self.calibrate_btn.setObjectName(u"calibrate_btn")
+
+        self.gridLayout.addWidget(self.calibrate_btn, 1, 2, 1, 2)
+
         self.disconnect_btn = QtWidgets.QPushButton(self.frame_2)
         self.disconnect_btn.setObjectName(u"disconnect_btn")
 
@@ -120,6 +125,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.basic_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Preview basic", None))
         self.augumented_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Augumented view", None))
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
+        self.calibrate_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Calibrate Camera", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
         self.find_all_cameras_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Find all cameras", None))
@@ -129,6 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def connect_signals(self):
         self.backend.update_model_signal.connect(self.update_model_slot)
         self.load_btn.clicked.connect(self.backend.get_model)
+        self.calibrate_btn.clicked.connect(self.backend.calibrate)
         self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
         self.connect_btn.clicked.connect(lambda: self.backend.connect_camera(
             self.camera_select_cb.currentIndex()

@@ -5,6 +5,9 @@ from PySide6 import QtWidgets, QtCore
 from threading import Thread
 from src.camera import Camera
 import cv2
+import glob
+import json
+import os
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -25,6 +28,20 @@ class Backend(QtCore.QObject):
         super(Backend, self).__init__()
         self.camera_sel_cb_add_items_signal = None
         self.camera = Camera()
+        self.config = {}
+
+        self.Q = None
+        if os.path.exists("config.json"):
+            with open("config.json","r") as file:
+                try:
+                    self.config = json.load(file)
+                    if "Q" in self.config:
+                        self.Q = cv2.Mat(np.array(self.config["Q"]['data']))
+                except ValueError as e:
+                    pass
+
+        self.camera.image_update.connect(self.camera_stream_update_slot)
+            
 
     
     def get_model(self):
@@ -70,4 +87,64 @@ class Backend(QtCore.QObject):
 
     def disconnect_camera(self):
         self.camera.stop()
+
+    def save_config(self):
+        s = json.dumps(self.config)
+        with open("config.json","w") as file:
+            file.write(s)
+
+    def calibrate(self):
+        if self.camera.capture is None:
+            return (False, None)
         
+        #images = glob.glob('./images/*.jpg')
+        #img1 = cv2.imread(images[0])
+        #img2 = cv2.imread(images[1])
+        img1 = self.img_left
+        img2 = self.img_right
+        
+        CHECKERBOARD = (6,7)
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        
+        objpoints = []
+        imgpoints1 = [] 
+        imgpoints2 = [] 
+        
+        objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+        objp[0,:,:2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+        
+        gray1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
+        ret1, corners1 = cv2.findChessboardCorners(gray1, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
+        gray2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
+        ret2, corners2 = cv2.findChessboardCorners(gray2, CHECKERBOARD, cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
+        
+        if ret1 == True:
+            objpoints.append(objp)
+            corners21 = cv2.cornerSubPix(gray1, corners1, (11,11),(-1,-1), criteria)
+            imgpoints1.append(corners21)
+        if ret2 == True:
+            corners22 = cv2.cornerSubPix(gray2, corners2, (11,11),(-1,-1), criteria)
+            imgpoints2.append(corners22)
+        
+        m1 = None
+        m2 = None
+        coef1 = None
+        coef2 = None
+        retval, cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, R, T, E, F = cv2.stereoCalibrate(objpoints,imgpoints1,imgpoints2, m1, coef1, m2, coef2, gray1.shape[::-1], None, None)
+
+        R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, gray1.shape[::1], R, T)
+        print("Q")
+        print(Q)   
+        Q_array = np.array(Q)
+
+        # Convert the numpy array to a JSON serializable object
+        Q_array = {'data': Q_array.tolist()}
+        self.config["Q"] = Q_array
+        self.Q = Q
+        self.save_config() 
+
+        return(True, self.Q)   
+
+    def camera_stream_update_slot(self, img1, img2):
+        self.img_left = img1
+        self.img_right = img2
