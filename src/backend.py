@@ -5,7 +5,7 @@ from PySide6 import QtWidgets, QtCore
 from threading import Thread
 from src.camera import Camera
 import cv2
-import glob
+from src.base.detector import PoseDetector
 import json
 import os
 
@@ -41,7 +41,9 @@ class Backend(QtCore.QObject):
                     pass
 
         self.camera.image_update.connect(self.camera_stream_update_slot)
-            
+
+        self.detector = PoseDetector()
+        self.camera.image_update.connect(self.detector.camera_slot)
 
     
     def get_model(self):
@@ -60,6 +62,8 @@ class Backend(QtCore.QObject):
         points = stl_mesh.points.reshape(-1, 3)
         faces = np.arange(points.shape[0]).reshape(-1, 3)
 
+        # point_cloud = np.asarray(points) # how to get point cloud for object detection
+        self.detector.init_model_point_cloud(points)
         mesh_data = MeshData(vertexes=points, faces=faces)
               
         self.update_model_signal.emit(mesh_data)
@@ -87,11 +91,6 @@ class Backend(QtCore.QObject):
 
     def disconnect_camera(self):
         self.camera.stop()
-
-    def save_config(self):
-        s = json.dumps(self.config)
-        with open("config.json","w") as file:
-            file.write(s)
 
     def calibrate(self):
         if self.camera.capture is None:
@@ -132,6 +131,11 @@ class Backend(QtCore.QObject):
         coef2 = None
         retval, cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, R, T, E, F = cv2.stereoCalibrate(objpoints,imgpoints1,imgpoints2, m1, coef1, m2, coef2, gray1.shape[::-1], None, None)
 
+        self.detector.cm1 = cameraMatrix1
+        self.detector.cm2 = cameraMatrix2
+        
+        self.detector.dc1 = distCoeffs1
+        self.detector.dc2 = distCoeffs2
         R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, gray1.shape[::1], R, T)
         print("Q")
         print(Q)   

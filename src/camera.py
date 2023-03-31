@@ -37,4 +37,7 @@ class Camera(QThread):
         self.capture = None
         self.quit()
 
+    
+
+
 

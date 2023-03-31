@@ -3,7 +3,7 @@ from src.backend import Backend
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Signal, Slot, Qt
 import numpy as np
-from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem
+from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem,GLScatterPlotItem
 from stl import mesh
 import cv2
 from src.backend import Backend
@@ -47,6 +47,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.viewer_3D = GLViewWidget()
         self.horizontalLayout_2.addWidget(self.viewer_3D)
+        
+        self.viewer_scene = GLViewWidget()
+        self.horizontalLayout_2.addWidget(self.viewer_scene)
 
         self.augumented_preview_label = QtWidgets.QLabel(self.frame)
         self.augumented_preview_label.setObjectName(u"augumented_preview_label")
@@ -105,6 +108,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.gridLayout.addWidget(self.method_cb, 0, 2, 1, 2)
 
+        self.DEBUG_btn = QtWidgets.QPushButton(self.frame_2)
+        self.DEBUG_btn.setObjectName(u"DEBUG_btn")
+
+        self.gridLayout.addWidget(self.DEBUG_btn, 1, 0, 3, 2)
 
         self.verticalLayout.addWidget(self.frame_2)
 
@@ -126,6 +133,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.augumented_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Augumented view", None))
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.calibrate_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Calibrate Camera", None))
+        self.DEBUG_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"DEBUG", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
         self.find_all_cameras_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Find all cameras", None))
@@ -133,7 +141,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
 
     def connect_signals(self):
+        self.DEBUG_btn.clicked.connect(self.backend.detector.reset_calculation_in_progress)
+
         self.backend.update_model_signal.connect(self.update_model_slot)
+        self.backend.detector.update_scene_signal.connect(self.update_scene_slot)
         self.load_btn.clicked.connect(self.backend.get_model)
         self.calibrate_btn.clicked.connect(self.backend.calibrate)
         self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
@@ -151,6 +162,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.viewer_3D.addItem(model_mesh)
 
         self.viewer_3D.show()
+
+    def update_scene_slot(self, points : GLScatterPlotItem):
+        
+        self.viewer_scene.clear()
+        self.viewer_scene.addItem(points)
+
+        self.viewer_scene.show()
 
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
@@ -171,5 +189,4 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.backend.camera.stop()
-
 
