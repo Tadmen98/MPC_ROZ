@@ -17,10 +17,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.backend = backend
 
+        self.img_not_connected = QtGui.QImage("images/not_connected.png")
+
         self.setup_ui()
         self.retranslate_ui()
         self.init_backend()
         self.connect_signals()
+        self.camera_disconnected()
         
     def setup_ui(self):
         if not self.objectName():
@@ -47,9 +50,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.viewer_3D = GLViewWidget()
         self.horizontalLayout_2.addWidget(self.viewer_3D)
-        
-        self.viewer_scene = GLViewWidget()
-        self.horizontalLayout_2.addWidget(self.viewer_scene)
 
         self.augumented_preview_label = QtWidgets.QLabel(self.frame)
         self.augumented_preview_label.setObjectName(u"augumented_preview_label")
@@ -169,13 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.viewer_3D.show()
 
-    def update_scene_slot(self, points : GLScatterPlotItem):
-        
-        self.viewer_scene.clear()
-        self.viewer_scene.addItem(points)
-
-        self.viewer_scene.show()
-
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
         self.backend.camera.image_update.connect(self.camera_stream_update_slot)
@@ -191,7 +184,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #flipped_image = cv2.flip(image, 1)
         qt_img = QImage(image.data, image.shape[1], image.shape[0],
                                    QImage.Format_RGB888)
-        scaled_qt_img = qt_img.scaled(320, 240, Qt.KeepAspectRatio)
+        scaled_qt_img = qt_img.scaledToWidth(self.width()/3)
         self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
 
     def detection_update_slot(self, img1, img2=None):
@@ -199,9 +192,13 @@ class MainWindow(QtWidgets.QMainWindow):
         #flipped_image = cv2.flip(image, 1)
         qt_img = QImage(image.data, image.shape[1], image.shape[0],
                                    QImage.Format_RGB888)
-        scaled_qt_img = qt_img.scaled(320, 240, Qt.KeepAspectRatio)
+        scaled_qt_img = qt_img.scaledToWidth(self.width()/3)
         self.augumented_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
 
     def closeEvent(self, event):
         self.backend.camera.stop()
 
+    def camera_disconnected(self):
+        scaled_qt_img = self.img_not_connected.scaledToWidth(self.width()/3)
+        self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        self.augumented_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
