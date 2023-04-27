@@ -5,9 +5,12 @@ from PySide6 import QtWidgets, QtCore
 from threading import Thread
 from src.camera import Camera
 import cv2
-from src.base.detector import PoseDetector
+from src.base.model_detection import Model_Detection
 import json
 import os
+from src.base.model_registration import Model_Registration
+from src.base.model_mesh import Model_Mesh
+from src.base.model_points import Model_Points
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -29,6 +32,11 @@ class Backend(QtCore.QObject):
         self.camera_sel_cb_add_items_signal = None
         self.camera = Camera()
         self.config = {}
+        self.model_registration = Model_Registration()
+        self.model_mesh = Model_Mesh()
+        self.list_model_points = []
+        self.registration_started = False
+        self.registration_ended = False
 
         self.Q = None
         if os.path.exists("config.json"):
@@ -41,9 +49,10 @@ class Backend(QtCore.QObject):
                     pass
 
         self.camera.image_update.connect(self.camera_stream_update_slot)
+        
 
-        self.detector = PoseDetector()
-        self.camera.image_update.connect(self.detector.camera_slot)
+        self.model_detection = Model_Detection()
+        self.camera.image_update.connect(self.model_detection.camera_slot)
 
     
     def get_model(self):
@@ -55,18 +64,38 @@ class Backend(QtCore.QObject):
         name = QtWidgets.QFileDialog.getOpenFileName() 
         self.load_mesh(name)
 
-    @threaded
+    
     def load_mesh(self, name):
         stl_mesh = mesh.Mesh.from_file(name[0])
+        self.model_mesh.load(name[0])
 
         points = stl_mesh.points.reshape(-1, 3)
         faces = np.arange(points.shape[0]).reshape(-1, 3)
 
-        # point_cloud = np.asarray(points) # how to get point cloud for object detection
-        self.detector.init_model_point_cloud(points)
         mesh_data = MeshData(vertexes=points, faces=faces)
-              
+
+        self.model_detection.load_mesh(self.model_mesh)
+#TMP MUSI BYT NAPOJENO NA VLASTNI TLACITKO
+        self.load_points()
         self.update_model_signal.emit(mesh_data)
+    
+    def load_points(self): 
+        #Open file dialog for choosing a file
+        name = QtWidgets.QFileDialog.getExistingDirectory() 
+        self.list_model_points.clear()
+        files_all = os.listdir(name)
+        files = []
+        for file in files_all:
+            if file.endswith(".yml"):
+                files.append(file)
+
+        for file in files:
+            model_points = Model_Points()
+            model_points.load(name + "/" + file)        
+            self.list_model_points.append(model_points)
+        
+        self.model_detection.load_points(self.list_model_points)
+
     
     @threaded
     def find_aviable_cameras(self):
@@ -88,6 +117,24 @@ class Backend(QtCore.QObject):
             # TODO: try stop and pass old object and then create new object
         self.camera.choose_camera(camera_index)
         self.camera.start()
+
+    def set_registration_ended(self):
+        self.registration_started = False
+        self.model_registration.stop()
+
+    def register_model(self):
+        print("HHHHHH")
+        if not self.registration_started:
+            self.registration_started = True
+            self.name = QtWidgets.QFileDialog.getSaveFileName(None, "Select YML configuration save location", "model.yml", "YML (*.yml)")
+            self.name = self.name[0].rstrip(".yml")
+            self.iteration = 0
+        
+        self.model_registration.set_parameters(self.name + "_" + str(self.iteration) + ".yml", 2000)
+        self.model_registration.start(self.img_left, self.model_mesh)
+        self.iteration += 1
+            
+
 
     def disconnect_camera(self):
         self.camera.stop()

@@ -93,6 +93,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.gridLayout.addWidget(self.connect_btn, 1, 0, 1, 2)
 
+        self.register_model_btn = QtWidgets.QPushButton(self.frame_2)
+        self.register_model_btn.setObjectName(u"register_model_btn")
+
+        self.gridLayout.addWidget(self.register_model_btn, 3, 2, 1, 2)
+
         self.camera_select_cb = QtWidgets.QComboBox(self.frame_2)
         self.camera_select_cb.setObjectName(u"camera_select_cb")
 
@@ -133,6 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.augumented_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Augumented view", None))
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.calibrate_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Calibrate Camera", None))
+        self.register_model_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Register Model", None))
         self.DEBUG_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"DEBUG", None))
         self.disconnect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Disconnect Camera", None))
         self.connect_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Connect Camera", None))
@@ -141,10 +147,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
 
     def connect_signals(self):
-        self.DEBUG_btn.clicked.connect(self.backend.detector.reset_calculation_in_progress)
-
+        self.DEBUG_btn.clicked.connect(self.backend.set_registration_ended)
+        self.register_model_btn.clicked.connect(self.backend.register_model)
         self.backend.update_model_signal.connect(self.update_model_slot)
-        self.backend.detector.update_scene_signal.connect(self.update_scene_slot)
+        #self.backend.detector.update_scene_signal.connect(self.update_scene_slot)
         self.load_btn.clicked.connect(self.backend.get_model)
         self.calibrate_btn.clicked.connect(self.backend.calibrate)
         self.find_all_cameras_btn.clicked.connect(self.backend.find_aviable_cameras)
@@ -173,6 +179,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
         self.backend.camera.image_update.connect(self.camera_stream_update_slot)
+        self.backend.model_detection.detection_update_signal.connect(self.detection_update_slot)
 
 
     def camera_select_cb_add_items(self, num_of_cameras: int):
@@ -181,11 +188,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def camera_stream_update_slot(self, img1, img2):
         image = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-        flipped_image = cv2.flip(image, 1)
-        qt_img = QImage(flipped_image.data, flipped_image.shape[1], flipped_image.shape[0],
+        #flipped_image = cv2.flip(image, 1)
+        qt_img = QImage(image.data, image.shape[1], image.shape[0],
                                    QImage.Format_RGB888)
         scaled_qt_img = qt_img.scaled(320, 240, Qt.KeepAspectRatio)
         self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+
+    def detection_update_slot(self, img1, img2=None):
+        image = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        #flipped_image = cv2.flip(image, 1)
+        qt_img = QImage(image.data, image.shape[1], image.shape[0],
+                                   QImage.Format_RGB888)
+        scaled_qt_img = qt_img.scaled(320, 240, Qt.KeepAspectRatio)
+        self.augumented_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
 
     def closeEvent(self, event):
         self.backend.camera.stop()

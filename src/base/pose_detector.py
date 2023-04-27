@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from src.base.pose_detector_base import PoseDetectorBase
 from PySide6 import QtCore
-from pyqtgraph.opengl import  MeshData,GLScatterPlotItem
+from pyqtgraph.opengl import GLScatterPlotItem
 
 
 class PoseDetector(PoseDetectorBase):
@@ -16,8 +16,8 @@ class PoseDetector(PoseDetectorBase):
         self.num_of_disparities = 64
         self.block_size = 15
 
-        self.focal_length = 385.4825  # in pixels for HD720, for HD1080 use 1400
-        self.baseline = 62.8594  # m
+        self.focal_length = 700  # in pixels for HD720, for HD1080 use 1400
+        self.baseline = 0.063  # m
 
         self.ppc_x = 0 #  x-coordinates of the principal point
         self.ppc_y = 0 #  y-coordinates of the principal point
@@ -32,7 +32,7 @@ class PoseDetector(PoseDetectorBase):
         self.dc2 = None
         self.cm1 = None
         self.cm2 = None
-        self.calculation_in_progress = False
+
         self.create_stereo_corr_obj()
 
 
@@ -109,74 +109,12 @@ class PoseDetector(PoseDetectorBase):
 
     #@Slot()
     def camera_slot(self, img_left, img_right):
-        if self.calculation_in_progress:
-            return
-        else:
-            self.calculation_in_progress = True
-        
-        img_size = (img_left.shape[1],img_left.shape[0])
-        gray_left = cv2.cvtColor(img_left, cv2.COLOR_BGR2GRAY)
-        gray_right = cv2.cvtColor(img_right, cv2.COLOR_BGR2GRAY)
-
-        # Define camera coefs, should move to init
-        left_camera_matrix = np.array([[385.395, 0, 333.435], [0, 385.3225, 190.276], [0, 0, 1]], dtype=np.float64)
-        right_camera_matrix = np.array([[385.4825, 0, 337.2475], [0, 385.445, 186.01475], [0, 0, 1]], dtype=np.float64)
-        distortion_coefficients_left = np.array([-0.0383038,0.0234572,0,0,-0.00448757,-0.00029159,0,0], dtype=np.float64)
-        distortion_coefficients_right = np.array([-0.0364626,0.0235784,0,0,-0.0101603,0.0044135,0,0], dtype=np.float64)
-
-        # Define the relative position and orientation of the two cameras
-        R = np.array([[0.00245413, 0, 0], [0, 0.00353464, 0], [0, 0, 0.0012617]], dtype=np.float64)
-        T = np.array([-self.baseline, 0, 0], dtype=np.float64)
-
-        # Compute the rectification maps and disparity-to-depth mapping matrix
-        R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(left_camera_matrix, distortion_coefficients_left, right_camera_matrix, distortion_coefficients_right, img_size, R, T, flags=cv2.CALIB_ZERO_DISPARITY, alpha=-1)
-        
-        map1, map2 = cv2.initUndistortRectifyMap(left_camera_matrix, distortion_coefficients_left, R1, P1, img_size, cv2.CV_32FC1)
-        rectified_left = cv2.remap(gray_left, map1, map2,cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT,0)
-
-        map1, map2 = cv2.initUndistortRectifyMap(right_camera_matrix, distortion_coefficients_right, R2, P2, img_size, cv2.CV_32FC1)
-        rectified_right = cv2.remap(gray_right, map1, map2, cv2.INTER_LANCZOS4,cv2.BORDER_CONSTANT,0)
-        stereo = cv2.StereoSGBM_create(minDisparity=0, numDisparities=128, blockSize=11)
-
-        # compute the disparity map
-        disparity = stereo.compute(rectified_left, rectified_right).astype(np.float32) / 16.0
-        #disparity = np.clip(disparity, 0, 255)
-        #disparity_normalized = cv2.normalize(disparity, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-        #cv2.imshow("disp",disparity_normalized)
-
-        # Compute the 3D point cloud
-        depth = cv2.reprojectImageTo3D(disparity, Q)
-        mask = disparity > disparity.min()
-        points = depth[mask]
-
-        points = points.reshape(-1, 3)
-        colors = img_left.reshape(-1, 3)
-
-        # Extract x, y, z coordinates from points
-        x = points[:, 0]
-        y = points[:, 1]
-        z = points[:, 2]
-
-        x = [i for index,i in enumerate(x) if points[index, 2] < 500]
-        y = [i for index,i in enumerate(y) if points[index, 2] < 500]
-        z = [i for index,i in enumerate(z) if points[index, 2] < 500]
-
-        # Create position array for PyQtGraph
-        pos = np.empty((len(z), 3))
-        pos[:, 0] = x
-        pos[:, 1] = y
-        pos[:, 2] = z
-
-        # Create color array for PyQtGraph
-        color = np.empty((len(points), 4))
-        color[:, 0] = 1.0  # red color
-        color[:, 1] = 0.0
-        color[:, 2] = 0.0
-        color[:, 3] = 1.0  # full opacity
-
-        scatter = GLScatterPlotItem(pos=pos, color=color, size=0.1, pxMode=False)
-        self.update_scene_signal.emit(scatter)
-        #self.calculation_in_progress = False
+        img_left_grayscale = cv2.cvtColor(img_left, cv2.COLOR_RGB2GRAY)
+        img_right_grayscale = cv2.cvtColor(img_right, cv2.COLOR_RGB2GRAY)
+        object_coordinates = self.find_object_in_3d_scene(img_left_grayscale, img_right_grayscale)
+        #print(object_coordinates)
+        #print("A")
+        #self.update_object_pose_signal.emit()
 
     def find_object_in_3d_scene(self, img_left, img_right):
         scene_point_cloud = self.gen_scene_point_cloud(img_left, img_right)
@@ -187,8 +125,5 @@ class PoseDetector(PoseDetectorBase):
 
         return object_pose
 
-    def reset_calculation_in_progress(self):
-        print("RESETING")
-        self.calculation_in_progress = False
 
 
