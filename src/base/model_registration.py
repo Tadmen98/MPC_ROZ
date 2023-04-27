@@ -59,6 +59,8 @@ class Model_Registration():
 
     def start(self, img, model_mesh):
         self.model_mesh = model_mesh
+        self.to_be_registered = model_mesh.vertices_count
+        self.pts = list(range(1, self.to_be_registered+1))
         matcher = Correspondence_Matcher()
         
         detector, descriptor = self.create_features(self.extractor_name, self.keypoints_count)
@@ -145,7 +147,6 @@ class Model_Registration():
         cv2.destroyWindow("Register model")
         
         self.registered = 0
-        self.to_be_registered = 8
         self.end_registration = False
         self.points2d.clear()
         self.points3d.clear()
