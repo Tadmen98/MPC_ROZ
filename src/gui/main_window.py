@@ -36,28 +36,50 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
 
-        self.frame = QtWidgets.QFrame(self.centralwidget)
-        self.frame.setObjectName(u"frame")
-        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        #LEFT CAM
+        self.frame_left = QtWidgets.QFrame(self.centralwidget)
+        self.frame_left.setObjectName(u"frame_left")
+        self.frame_left.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_left.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.horizontalLayout_left = QtWidgets.QHBoxLayout(self.frame_left)
+        self.horizontalLayout_left.setObjectName(u"horizontalLayout_left")
 
-        self.basic_preview_label = QtWidgets.QLabel(self.frame)
-        self.basic_preview_label.setObjectName(u"basic_preview_label")
+        self.basic_preview_label_left = QtWidgets.QLabel(self.frame_left)
+        self.basic_preview_label_left.setObjectName(u"basic_preview_label_left")
 
-        self.horizontalLayout_2.addWidget(self.basic_preview_label)
+        self.horizontalLayout_left.addWidget(self.basic_preview_label_left)
 
-        self.viewer_3D = GLViewWidget()
-        self.horizontalLayout_2.addWidget(self.viewer_3D)
+        self.viewer_3D_left = GLViewWidget()
+        self.horizontalLayout_left.addWidget(self.viewer_3D_left)
 
-        self.augumented_preview_label = QtWidgets.QLabel(self.frame)
-        self.augumented_preview_label.setObjectName(u"augumented_preview_label")
+        self.augumented_preview_label_left = QtWidgets.QLabel(self.frame_left)
+        self.augumented_preview_label_left.setObjectName(u"augumented_preview_label_left")
 
-        self.horizontalLayout_2.addWidget(self.augumented_preview_label)
+        self.horizontalLayout_left.addWidget(self.augumented_preview_label_left)
+        self.verticalLayout.addWidget(self.frame_left)
 
+        #RIGHT CAM
+        self.frame_right = QtWidgets.QFrame(self.centralwidget)
+        self.frame_right.setObjectName(u"frame_right")
+        self.frame_right.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_right.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.horizontalLayout_right = QtWidgets.QHBoxLayout(self.frame_right)
+        self.horizontalLayout_right.setObjectName(u"horizontalLayout_right")
 
-        self.verticalLayout.addWidget(self.frame)
+        self.basic_preview_label_right = QtWidgets.QLabel(self.frame_right)
+        self.basic_preview_label_right.setObjectName(u"basic_preview_label_right")
+
+        self.horizontalLayout_right.addWidget(self.basic_preview_label_right)
+
+        self.viewer_3D_right = GLViewWidget()
+        self.horizontalLayout_right.addWidget(self.viewer_3D_right)
+
+        self.augumented_preview_label_right = QtWidgets.QLabel(self.frame_right)
+        self.augumented_preview_label_right.setObjectName(u"augumented_preview_label_right")
+
+        self.horizontalLayout_right.addWidget(self.augumented_preview_label_right)
+        self.verticalLayout.addWidget(self.frame_right)
+        ###--------------------
 
         self.frame_2 = QtWidgets.QFrame(self.centralwidget)
         self.frame_2.setObjectName(u"frame_2")
@@ -134,8 +156,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def retranslate_ui(self):
         self.setWindowTitle(QtCore.QCoreApplication.translate("MainWindow", u"MPC-ROZ Projekt", None))
-        self.basic_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Preview basic", None))
-        self.augumented_preview_label.setText(QtCore.QCoreApplication.translate("MainWindow", u"Augumented view", None))
         self.load_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Load Model", None))
         self.calibrate_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Calibrate Camera", None))
         self.register_model_btn.setText(QtCore.QCoreApplication.translate("MainWindow", u"Register Model", None))
@@ -164,10 +184,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_model_slot(self, mesh_data : MeshData):
         model_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
         
-        self.viewer_3D.clear()
-        self.viewer_3D.addItem(model_mesh)
+        self.viewer_3D_left.clear()
+        self.viewer_3D_left.addItem(model_mesh)
+        self.viewer_3D_left.show()
 
-        self.viewer_3D.show()
+        self.viewer_3D_right.clear()
+        self.viewer_3D_right.addItem(model_mesh)
+        self.viewer_3D_right.show()
 
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
@@ -179,26 +202,42 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera_select_cb.clear()
         self.camera_select_cb.addItems([str(item) for item in range(num_of_cameras)])
 
-    def camera_stream_update_slot(self, img1, img2):
-        image = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-        #flipped_image = cv2.flip(image, 1)
-        qt_img = QImage(image.data, image.shape[1], image.shape[0],
+    def camera_stream_update_slot(self, img_left, img_right):
+        image_left = cv2.cvtColor(img_left, cv2.COLOR_BGR2RGB)
+        
+        qt_img_left = QImage(image_left.data, image_left.shape[1], image_left.shape[0],
                                    QImage.Format_RGB888)
-        scaled_qt_img = qt_img.scaledToWidth(self.width()/3)
-        self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        scaled_qt_img_left = qt_img_left.scaledToWidth(self.width()/3)
+        self.basic_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img_left))
 
-    def detection_update_slot(self, img1, img2=None):
-        image = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-        #flipped_image = cv2.flip(image, 1)
-        qt_img = QImage(image.data, image.shape[1], image.shape[0],
+        #____RIGHT___#
+        image_right = cv2.cvtColor(img_right, cv2.COLOR_BGR2RGB)
+        
+        qt_img = QImage(image_right.data, image_right.shape[1], image_right.shape[0],
                                    QImage.Format_RGB888)
-        scaled_qt_img = qt_img.scaledToWidth(self.width()/3)
-        self.augumented_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        scaled_qt_img_right = qt_img.scaledToWidth(self.width()/3)
+        self.basic_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img_right))
+
+    def detection_update_slot(self, img_left, img_right=None):
+        image_left = cv2.cvtColor(img_left, cv2.COLOR_BGR2RGB)
+        qt_img_left = QImage(image_left.data, image_left.shape[1], image_left.shape[0],
+                                   QImage.Format_RGB888)
+        scaled_qt_img_left = qt_img_left.scaledToWidth(self.width()/3)
+        self.augumented_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img_left))
+
+        #____RIGHT___#
+        image_right = cv2.cvtColor(img_right, cv2.COLOR_BGR2RGB)
+        qt_img_right = QImage(image_right.data, image_right.shape[1], image_right.shape[0],
+                                   QImage.Format_RGB888)
+        scaled_qt_img_right = qt_img_right.scaledToWidth(self.width()/3)
+        self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img_right))
 
     def closeEvent(self, event):
         self.backend.camera.stop()
 
     def camera_disconnected(self):
         scaled_qt_img = self.img_not_connected.scaledToWidth(self.width()/3)
-        self.basic_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
-        self.augumented_preview_label.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        self.basic_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        self.augumented_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        self.basic_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
+        self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
