@@ -38,6 +38,13 @@ class Backend(QtCore.QObject):
         self.registration_started = False
         self.registration_ended = False
 
+        self.num_keypoints = 2000
+        self.ratio_test = 0.7
+        self.iterations_count = 500
+        self.reprojection_error = 2
+        self.confidence = 0.95
+        self.min_inliers = 10
+
         self.Q = None
         if os.path.exists("config.json"):
             with open("config.json","r") as file:
@@ -57,17 +64,13 @@ class Backend(QtCore.QObject):
         self.camera.image_update_right.connect(self.model_detection_right.camera_slot)
 
     
-    def get_model(self):
+    def load_model_mesh(self):
         """Opens file dialog for user to select stl model.Method
         is called by Load model button.
         """
 
         #Open file dialog for choosing a file
         name = QtWidgets.QFileDialog.getOpenFileName() 
-        self.load_mesh(name)
-
-    
-    def load_mesh(self, name):
         stl_mesh = mesh.Mesh.from_file(name[0])
         self.model_mesh.load(name[0])
 
@@ -78,11 +81,9 @@ class Backend(QtCore.QObject):
 
         self.model_detection_left.load_mesh(self.model_mesh)
         self.model_detection_right.load_mesh(self.model_mesh)
-#TMP MUSI BYT NAPOJENO NA VLASTNI TLACITKO
-        self.load_points()
         self.update_model_signal.emit(mesh_data)
     
-    def load_points(self): 
+    def load_model_points(self): 
         #Open file dialog for choosing a file
         name = QtWidgets.QFileDialog.getExistingDirectory() 
         self.list_model_points.clear()
@@ -203,3 +204,23 @@ class Backend(QtCore.QObject):
     def camera_stream_update_slot(self, img1, img2):
         self.img_left = img1
         self.img_right = img2
+
+    def update_detection_parameters(self, num_keypoints=None, ratio_test=None, iterations_count=None, 
+                                    reprojection_error=None, confidence=None, min_inliers=None):
+        if num_keypoints is not None:
+            self.num_keypoints = num_keypoints 
+        if ratio_test is not None:
+            self.ratio_test = ratio_test
+        if iterations_count is not None:
+            self.iterations_count = iterations_count
+        if reprojection_error is not None :
+            self.reprojection_error = reprojection_error
+        if confidence is not None:
+            self.confidence = confidence
+        if min_inliers is not None:
+            self.min_inliers = min_inliers
+
+        self.model_detection_left.update_parameters(self.num_keypoints, self.ratio_test, self.iterations_count, 
+                                self.reprojection_error, self.confidence, self.min_inliers)
+        self.model_detection_right.update_parameters(self.num_keypoints, self.ratio_test, self.iterations_count, 
+                                self.reprojection_error, self.confidence, self.min_inliers)

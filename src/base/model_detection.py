@@ -43,24 +43,24 @@ class Model_Detection(QtCore.QObject):
         self.blue = (255,0,0)
         self.yellow = (0, 255, 255)
  
-        self.numKeyPoints = 2000
-        self.ratioTest = 0.7
-        self.iterationsCount = 500
-        self.reprojectionError = 2
+        self.num_keypoints = 2000
+        self.ratio_test = 0.7
+        self.iterations_count = 500
+        self.reprojection_error = 2
         self.confidence = 0.95
-        self.minInliers = 10
-        self.pnpMethod = 0
-        self.featureName = "KAZE"
+        self.min_inliers = 10
+        self.pnp_method = 0
+        self.feature_name = "KAZE"
 
         self.pnp_detection = PnP_Problem(self.camera_params)
 
         self.matcher = Correspondence_Matcher()  
 
-        self.detector, self.descriptor = self.create_features(self.featureName, self.numKeyPoints)
+        self.detector, self.descriptor = self.create_features(self.feature_name, self.num_keypoints)
         self.matcher.setFeatureDetector(self.detector)                                      
         self.matcher.setDescriptorExtractor(self.descriptor)                                
-        self.matcher.setDescriptorMatcher(self.create_matcher(self.featureName))        
-        self.matcher.setRatio(self.ratioTest) 
+        self.matcher.setDescriptorMatcher(self.create_matcher(self.feature_name))        
+        self.matcher.setRatio(self.ratio_test) 
 
     def set_camera_parameters(self, fx, fy, cx, cy):
         self.camera_params = [ fx,  
@@ -68,6 +68,21 @@ class Model_Detection(QtCore.QObject):
                         cx,      
                         cy]    
         self.pnp_detection = PnP_Problem(self.camera_params)
+    
+    def update_parameters(self, num_keypoints, ratio_test, iterations_count, 
+                                reprojection_error, confidence, min_inliers):
+        self.num_keypoints = num_keypoints
+        self.ratio_test = ratio_test
+        self.iterations_count  = iterations_count 
+        self.reprojection_error = reprojection_error
+        self.confidence  = confidence 
+        self.min_inliers = min_inliers
+
+        self.detector, self.descriptor = self.create_features(self.feature_name, self.num_keypoints)
+        self.matcher.setFeatureDetector(self.detector)                                      
+        self.matcher.setDescriptorExtractor(self.descriptor)  
+        self.matcher.setDescriptorMatcher(self.create_matcher(self.feature_name))        
+        self.matcher.setRatio(self.ratio_test) 
 
     def load_mesh(self, model_mesh : Model_Mesh):
         self.model_mesh = model_mesh  # load an object mesh    
@@ -125,8 +140,8 @@ class Model_Detection(QtCore.QObject):
             
             if(len(good_matches) >= 4): # solvePnPRANSAC mini 4 points
                 inliers_idx = self.pnp_detection.estimatePoseRANSAC( list_points3d_model_match, list_points2d_scene_match,
-                                                self.pnpMethod, inliers_idx,
-                                                self.iterationsCount, self.reprojectionError, self.confidence )
+                                                self.pnp_method, inliers_idx,
+                                                self.iterations_count, self.reprojection_error, self.confidence )
 
 
 
@@ -145,7 +160,7 @@ class Model_Detection(QtCore.QObject):
 
                 draw2DPoints(frame_vis, list_points2d_inliers, self.blue)
 
-                if( len(inliers_idx) >= self.minInliers ):
+                if( len(inliers_idx) >= self.min_inliers):
                     good_measurement = True
             
             l = 5
@@ -166,29 +181,29 @@ class Model_Detection(QtCore.QObject):
         self.calculation_in_progress = False
 
 
-    def create_features(self, featureName, numKeypoints):
+    def create_features(self, feature_name, num_keypoints):
         detector = None
         descriptor = None
-        if (featureName == "ORB"):
-            detector = cv2.ORB_create(numKeypoints)
-            descriptor = cv2.ORB_create(numKeypoints)
-        elif (featureName == "KAZE"):
+        if (feature_name == "ORB"):
+            detector = cv2.ORB_create(num_keypoints)
+            descriptor = cv2.ORB_create(num_keypoints)
+        elif (feature_name == "KAZE"):
             detector = cv2.KAZE_create()
             descriptor = cv2.KAZE_create()
-        elif (featureName == "AKAZE"):
+        elif (feature_name == "AKAZE"):
             detector = cv2.AKAZE_create()
             descriptor = cv2.AKAZE_create()
-        elif (featureName == "BRISK"):
+        elif (feature_name == "BRISK"):
             detector = cv2.BRISK_create()
             descriptor = cv2.BRISK_create()
-        elif (featureName == "SIFT"):
+        elif (feature_name == "SIFT"):
             detector = cv2.SIFT_create()
             descriptor = cv2.SIFT_create()
 
         return detector, descriptor
 
-    def create_matcher(self, featureName):
-        if (featureName == "ORB" or featureName == "BRISK" or featureName == "AKAZE" or featureName == "BINBOOST"):
+    def create_matcher(self, feature_name):
+        if (feature_name == "ORB" or feature_name == "BRISK" or feature_name == "AKAZE" or feature_name == "BINBOOST"):
             return cv2.DescriptorMatcher_create("BruteForce-Hamming")
         else:
             return cv2.DescriptorMatcher_create("BruteForce")
