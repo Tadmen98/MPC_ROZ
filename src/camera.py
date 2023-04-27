@@ -7,6 +7,8 @@ import cv2
 
 class Camera(QThread):
     image_update = Signal(np.ndarray, np.ndarray)
+    image_update_left = Signal(np.ndarray)
+    image_update_right = Signal(np.ndarray)
 
     def __init__(self):
         self.camera_index = None
@@ -27,6 +29,8 @@ class Camera(QThread):
             if ret:
                 frame_left, frame_right = np.split(frame, 2, axis=1)
                 self.image_update.emit(frame_left, frame_right)
+                self.image_update_left.emit(frame_left)
+                self.image_update_right.emit(frame_right)
 
     def stop(self):
         self.ThreadActive = False

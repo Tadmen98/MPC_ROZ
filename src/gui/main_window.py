@@ -195,7 +195,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_backend(self):
         self.backend.camera_sel_cb_add_items_signal = self.camera_sel_cb_add_items_signal
         self.backend.camera.image_update.connect(self.camera_stream_update_slot)
-        self.backend.model_detection.detection_update_signal.connect(self.detection_update_slot)
+        self.backend.model_detection_left.detection_update_signal.connect(self.detection_update_slot)
+        self.backend.model_detection_right.detection_update_signal.connect(self.detection_update_slot)
 
 
     def camera_select_cb_add_items(self, num_of_cameras: int):
@@ -218,19 +219,20 @@ class MainWindow(QtWidgets.QMainWindow):
         scaled_qt_img_right = qt_img.scaledToWidth(self.width()/3)
         self.basic_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img_right))
 
-    def detection_update_slot(self, img_left, img_right=None):
-        image_left = cv2.cvtColor(img_left, cv2.COLOR_BGR2RGB)
-        qt_img_left = QImage(image_left.data, image_left.shape[1], image_left.shape[0],
-                                   QImage.Format_RGB888)
-        scaled_qt_img_left = qt_img_left.scaledToWidth(self.width()/3)
-        self.augumented_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img_left))
-
-        #____RIGHT___#
-        image_right = cv2.cvtColor(img_right, cv2.COLOR_BGR2RGB)
-        qt_img_right = QImage(image_right.data, image_right.shape[1], image_right.shape[0],
-                                   QImage.Format_RGB888)
-        scaled_qt_img_right = qt_img_right.scaledToWidth(self.width()/3)
-        self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img_right))
+    def detection_update_slot(self, img, side):
+        if side == "left":
+            image_left = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            qt_img_left = QImage(image_left.data, image_left.shape[1], image_left.shape[0],
+                                    QImage.Format_RGB888)
+            scaled_qt_img_left = qt_img_left.scaledToWidth(self.width()/3)
+            self.augumented_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img_left))
+        elif side == "right":
+            #____RIGHT___#
+            image_right = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            qt_img_right = QImage(image_right.data, image_right.shape[1], image_right.shape[0],
+                                    QImage.Format_RGB888)
+            scaled_qt_img_right = qt_img_right.scaledToWidth(self.width()/3)
+            self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img_right))
 
     def closeEvent(self, event):
         self.backend.camera.stop()

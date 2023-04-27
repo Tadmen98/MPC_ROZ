@@ -21,12 +21,13 @@ def threaded(fn):
     return wrapper
 
 class Model_Detection(QtCore.QObject):
-    detection_update_signal = QtCore.Signal(cv2.Mat)
+    detection_update_signal = QtCore.Signal(cv2.Mat, str)
 
-    def __init__(self):
+    def __init__(self, side):
         super(Model_Detection, self).__init__()
         self.model_points_loaded = False
-   
+        self.side = side
+
         self.calculation_in_progress = False
         self.model_points = Model_Points()
         self.model_mesh = Model_Mesh() 
@@ -77,7 +78,7 @@ class Model_Detection(QtCore.QObject):
             self.model_points_loaded = True
 
     @threaded
-    def camera_slot(self, img_left, img_right):
+    def camera_slot(self, img):
         if self.calculation_in_progress:
             return
         else:
@@ -87,7 +88,7 @@ class Model_Detection(QtCore.QObject):
                 return
         
         inliers_most = 0
-        frame_final = img_left.copy()
+        frame_final = img.copy()
 
         for model_points in self.list_model_points:
             # Model info
@@ -97,12 +98,12 @@ class Model_Detection(QtCore.QObject):
 
             good_measurement = False
 
-            frame_vis = img_left.copy()
+            frame_vis = img.copy()
 
             good_matches = []
             keypoints_scene = []
 
-            good_matches, keypoints_scene = self.matcher.robustMatch(img_left, self.descriptors_model, self.keypoints_model)
+            good_matches, keypoints_scene = self.matcher.robustMatch(img, self.descriptors_model, self.keypoints_model)
 
             # -- Step 2: Find out the 2D/3D correspondences
             list_points3d_model_match = [] # 3D coordinates found in the scene
@@ -161,7 +162,7 @@ class Model_Detection(QtCore.QObject):
     #TODO Tady to chce else větev, která vykreslí starou pózu pokud nebyla detekovaná nová, ale musí to být omezené na pár snímků - jen pro zvýšení robustnosti
             frame_final = frame_vis.copy()
 
-        self.detection_update_signal.emit(frame_final)
+        self.detection_update_signal.emit(frame_final, self.side)
         self.calculation_in_progress = False
 
 

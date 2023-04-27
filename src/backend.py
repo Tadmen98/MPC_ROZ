@@ -51,8 +51,10 @@ class Backend(QtCore.QObject):
         self.camera.image_update.connect(self.camera_stream_update_slot)
         
 
-        self.model_detection = Model_Detection()
-        self.camera.image_update.connect(self.model_detection.camera_slot)
+        self.model_detection_left = Model_Detection("left")
+        self.model_detection_right = Model_Detection("right")
+        self.camera.image_update_left.connect(self.model_detection_left.camera_slot)
+        self.camera.image_update_right.connect(self.model_detection_right.camera_slot)
 
     
     def get_model(self):
@@ -74,7 +76,8 @@ class Backend(QtCore.QObject):
 
         mesh_data = MeshData(vertexes=points, faces=faces)
 
-        self.model_detection.load_mesh(self.model_mesh)
+        self.model_detection_left.load_mesh(self.model_mesh)
+        self.model_detection_right.load_mesh(self.model_mesh)
 #TMP MUSI BYT NAPOJENO NA VLASTNI TLACITKO
         self.load_points()
         self.update_model_signal.emit(mesh_data)
@@ -94,7 +97,8 @@ class Backend(QtCore.QObject):
             model_points.load(name + "/" + file)        
             self.list_model_points.append(model_points)
         
-        self.model_detection.load_points(self.list_model_points)
+        self.model_detection_left.load_points(self.list_model_points)
+        self.model_detection_right.load_points(self.list_model_points)
 
     
     @threaded
