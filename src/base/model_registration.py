@@ -10,6 +10,7 @@ from src.base.pnp_problem import PnP_Problem
 class Model_Registration():
     def __init__(self, ):
         self.end_registration = False
+        self.cancel_registration = False
 
         self.camera_params = [ 385.395,   # fx
                             385.3225,  # fy
@@ -108,46 +109,48 @@ class Model_Registration():
 
         cv2.imshow("Register model", img_vis)
         cv2.waitKey(0)
+        if self.cancel_registration == False:
+            keypoints_model = matcher.computeKeyPoints(img)
+            descriptors = matcher.computeDescriptors(img, keypoints_model)
 
-        keypoints_model = matcher.computeKeyPoints(img)
-        descriptors = matcher.computeDescriptors(img, keypoints_model)
+            for i in range(len(keypoints_model)):
+                point2d = np.array(keypoints_model[i].pt)
+                point3d = None
+                on_surface, point3d = self.pnp.backproject2DPoint(model_mesh, point2d)
+                if (on_surface):
+                    self.model_points.add_corespondence(point2d, point3d)
+                    self.model_points.add_descriptor(descriptors[i])
+                    self.model_points.add_keypoint(keypoints_model[i])
+                else:
+                    self.model_points.add_outlier(point2d)
+            
+            img_vis = img.copy()
 
-        for i in range(len(keypoints_model)):
-            point2d = np.array(keypoints_model[i].pt)
-            point3d = None
-            on_surface, point3d = self.pnp.backproject2DPoint(model_mesh, point2d)
-            if (on_surface):
-                self.model_points.add_corespondence(point2d, point3d)
-                self.model_points.add_descriptor(descriptors[i])
-                self.model_points.add_keypoint(keypoints_model[i])
-            else:
-                self.model_points.add_outlier(point2d)
+            # The list of the points2d of the model
+            list_points_in = self.model_points.points2d_in
+            list_points_out = self.model_points.points2d_out
+
+            num = str(len(list_points_in))
+            text = "There are " + num + " inliers"
+            drawText(img_vis, text, green)
+
+            num = str(len(list_points_out))
+            text = "There are " + num + " outliers"
+            drawText2(img_vis, text, red)
+
+            drawObjectMesh(img_vis, model_mesh, self.pnp, blue)
+
+            draw2DPoints(img_vis, list_points_in, green)
+            draw2DPoints(img_vis, list_points_out, red)
+
+            cv2.imshow("Register model", img_vis)
+            cv2.waitKey(0)
         
-        img_vis = img.copy()
-
-        # The list of the points2d of the model
-        list_points_in = self.model_points.points2d_in
-        list_points_out = self.model_points.points2d_out
-
-        num = str(len(list_points_in))
-        text = "There are " + num + " inliers"
-        drawText(img_vis, text, green)
-
-        num = str(len(list_points_out))
-        text = "There are " + num + " outliers"
-        drawText2(img_vis, text, red)
-
-        drawObjectMesh(img_vis, model_mesh, self.pnp, blue)
-
-        draw2DPoints(img_vis, list_points_in, green)
-        draw2DPoints(img_vis, list_points_out, red)
-
-        cv2.imshow("Register model", img_vis)
-        cv2.waitKey(0)
         cv2.destroyWindow("Register model")
         
         self.registered = 0
         self.end_registration = False
+        self.cancel_registration = False
         self.points2d.clear()
         self.points3d.clear()
 
@@ -168,8 +171,11 @@ class Model_Registration():
                     self.end_registration = True
         elif (event == cv2.EVENT_RBUTTONUP):
             self.registered += 1
+            if self.end_registration:
+                self.cancel_registration = True
             if self.registered == self.to_be_registered:
                     self.end_registration = True
+
 
 
     def create_features(self, featureName, numKeypoints):
