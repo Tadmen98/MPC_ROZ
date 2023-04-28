@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 from src.base.pnp_problem import PnP_Problem
 from src.base.model_mesh import Model_Mesh
 from src.base.model_points import Model_Points
 from src.base.correspondence_matcher import Correspondence_Matcher
 from src.base.draw_functions import *
 from threading import Thread
+from scipy.spatial.transform import Rotation
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -22,6 +23,7 @@ def threaded(fn):
 
 class Model_Detection(QtCore.QObject):
     detection_update_signal = QtCore.Signal(cv2.Mat, str)
+    pose_transformation_signal = QtCore.Signal(QtGui.QMatrix4x4)
 
     def __init__(self, side):
         super(Model_Detection, self).__init__()
@@ -31,7 +33,10 @@ class Model_Detection(QtCore.QObject):
         self.calculation_in_progress = False
         self.model_points = Model_Points()
         self.model_mesh = Model_Mesh() 
-
+        self.transformation_old = QtGui.QMatrix4x4([1,0,0,0,
+                                                    0,1,0,0,
+                                                    0,0,1,0,
+                                                    0,0,0,1])
         # Intrinsic camera params from vendor
         self.camera_params = [ 385.395,   # fx
                         385.3225,  # fy
@@ -174,6 +179,16 @@ class Model_Detection(QtCore.QObject):
                 pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,l,0], dtype=np.float64)))  # axis y
                 pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,l], dtype=np.float64)))  # axis z
                 draw3DCoordinateAxes(frame_vis, pose_points2d)           # draw axes
+
+                P_matrix = QtGui.QMatrix4x4([self.pnp_detection._P_matrix_[0,0],self.pnp_detection._P_matrix_[0,1],self.pnp_detection._P_matrix_[0,2],self.pnp_detection._P_matrix_[0,3],
+                                             self.pnp_detection._P_matrix_[1,0],self.pnp_detection._P_matrix_[1,1],self.pnp_detection._P_matrix_[1,2],self.pnp_detection._P_matrix_[1,3],
+                                             self.pnp_detection._P_matrix_[2,0],self.pnp_detection._P_matrix_[2,1],self.pnp_detection._P_matrix_[2,2],self.pnp_detection._P_matrix_[2,3],
+                                             0,0,0,1])
+                
+                transformation = self.transformation_old*P_matrix
+                self.tranformation_old = P_matrix.inverted()
+                self.pose_transformation_signal.emit(transformation)
+        
     #TODO Tady to chce else větev, která vykreslí starou pózu pokud nebyla detekovaná nová, ale musí to být omezené na pár snímků - jen pro zvýšení robustnosti
             frame_final = frame_vis.copy()
 

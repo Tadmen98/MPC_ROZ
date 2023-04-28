@@ -4,9 +4,12 @@ from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Signal, Slot, Qt
 import numpy as np
 from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem,GLScatterPlotItem
+from pyqtgraph import Vector
 from stl import mesh
 import cv2
 from src.backend import Backend
+from math import atan2, sqrt
+from scipy.spatial.transform import Rotation as R
 
 class MainWindow(QtWidgets.QMainWindow):
     
@@ -18,12 +21,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.backend = backend
 
         self.img_not_connected = QtGui.QImage("images/not_connected.png")
+        self.model_mesh_left = GLMeshItem()
+        self.model_mesh_right = GLMeshItem()
 
         self.setup_ui()
         self.retranslate_ui()
         self.init_backend()
         self.connect_signals()
         self.camera_disconnected()
+
+        self.backend.model_detection_left.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "left"))
+        self.backend.model_detection_right.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "right"))
         
     def setup_ui(self):
         if not self.objectName():
@@ -332,14 +340,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def update_model_slot(self, mesh_data : MeshData):
-        model_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
+        self.model_mesh_left = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
+        self.model_mesh_right = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
         
         self.viewer_3D_left.clear()
-        self.viewer_3D_left.addItem(model_mesh)
+        self.viewer_3D_left.addItem(self.model_mesh_left)
         self.viewer_3D_left.show()
 
         self.viewer_3D_right.clear()
-        self.viewer_3D_right.addItem(model_mesh)
+        self.viewer_3D_right.addItem(self.model_mesh_right)
         self.viewer_3D_right.show()
 
     def init_backend(self):
@@ -393,3 +402,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.augumented_preview_label_left.setPixmap(QPixmap.fromImage(scaled_qt_img))
         self.basic_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
         self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
+
+    def transform_3d_view(self, trans_mat : QtGui.QMatrix4x4, side):
+        if side == "left":
+            self.model_mesh_left.applyTransform(trans_mat,False)
+        elif side == "right":
+            self.model_mesh_right.applyTransform(trans_mat,False)
