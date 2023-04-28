@@ -78,6 +78,9 @@ class Backend(QtCore.QObject):
 
         #Open file dialog for choosing a file
         name = QtWidgets.QFileDialog.getOpenFileName() 
+        if name[0] == "":
+            return
+        
         stl_mesh = mesh.Mesh.from_file(name[0])
         self.model_mesh.load(name[0])
 
@@ -93,6 +96,8 @@ class Backend(QtCore.QObject):
     def load_model_points(self): 
         #Open file dialog for choosing a file
         name = QtWidgets.QFileDialog.getOpenFileName() 
+        if name[0] == "":
+            return
 
         self.model_points = Model_Points()
         self.model_points.load(name[0])    
@@ -131,9 +136,11 @@ class Backend(QtCore.QObject):
 
     def register_model(self):
         if not self.registration_started:
-            self.registration_started = True
-            self.registration_started_signal.emit()
             self.name = QtWidgets.QFileDialog.getSaveFileName(None, "Select YML configuration save location", "model.yml", "YML (*.yml)")
+            if self.name[0] == "":
+                return
+            self.registration_started_signal.emit()
+            self.registration_started = True
             self.name = self.name[0].rstrip(".yml")
             self.iteration = 0
         
