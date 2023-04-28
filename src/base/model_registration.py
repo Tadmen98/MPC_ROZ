@@ -31,6 +31,13 @@ class Model_Registration():
         self.save_path = ""
         self.keypoints_count = 0
         self.extractor_name = "KAZE"
+        
+        preview_parameters = [50,   # fx
+                            50,  # fy
+                            250,      # cx
+                            250]
+        self.pnp_preview = PnP_Problem(preview_parameters)
+        self.pnp_preview._P_matrix_ = np.matrix([[1,0,0,0],[0,1,0,0],[0,0,1,0]])
 
     def is_registrable(self):
         return (self.registered < self.to_be_registered)
@@ -71,15 +78,24 @@ class Model_Registration():
 
         cv2.namedWindow("Register model", cv2.WINDOW_KEEPRATIO)
         cv2.setMouseCallback("Register model", self.on_mouse_click, 0)
-
+        
+        cv2.namedWindow("Registration preview", cv2.WINDOW_KEEPRATIO)
+        img_preview = cv2.imread("images/preview_background.png")
         img_vis = None
 
         red = (0, 0, 255)
         green = (0,255,0)
         blue = (255,0,0)
+        
+        points_preview = []
+        for vertex in self.model_mesh.vertices:
+            points_preview.append(self.pnp_preview.backproject3DPoint(vertex))
+        draw2DPoints(img_preview, points_preview, red)
+        drawObjectMesh(img_preview,self.model_mesh,self.pnp_preview,blue)
 
         while ( cv2.waitKey(30) < 0 ):
             img_vis = img.copy()
+            img_preview_copy = img_preview.copy()
 
             list_points2d = self.points2d
             list_points3d = self.points3d
@@ -97,8 +113,10 @@ class Model_Registration():
                 drawText(img_vis, "Registration Complete", green)
                 drawCounter(img_vis, self.registered, self.to_be_registered, green)
                 break
-
+            
+            draw2DPoints(img_preview_copy, [points_preview[self.registered-1]], green)
             cv2.imshow("Register model", img_vis)
+            cv2.imshow("Registration preview", img_preview_copy)
 
         list_points2d = self.points2d
         list_points3d = self.points3d
@@ -148,6 +166,7 @@ class Model_Registration():
             cv2.waitKey(0)
         
         cv2.destroyWindow("Register model")
+        cv2.destroyWindow("Register preview")
         
         self.registered = 0
         self.end_registration = False
