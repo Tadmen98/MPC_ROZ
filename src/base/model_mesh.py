@@ -13,7 +13,7 @@ class Model_Mesh():
         return self.vertices[position]
 
     def load(self, path):
-        self.vertices.clear()
+        self.vertices = None
         self.triangles.clear()
 
         stl_mesh = mesh.Mesh.from_file(path)
