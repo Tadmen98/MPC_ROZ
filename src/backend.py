@@ -28,6 +28,7 @@ class Backend(QtCore.QObject):
     update_model_signal = QtCore.Signal(MeshData)
     registration_started_signal = QtCore.Signal()
     registration_ended_signal = QtCore.Signal()
+    camera_connected_signal = QtCore.Signal()
 
     def __init__(self):
         super(Backend, self).__init__()
@@ -68,8 +69,8 @@ class Backend(QtCore.QObject):
         self.camera.image_update_left.connect(self.model_detection_left.camera_slot)
         self.camera.image_update_right.connect(self.model_detection_right.camera_slot)
 
-        
-
+        self.camera_connected = False
+        self.mesh_loaded = False
     
     def load_model_mesh(self):
         """Opens file dialog for user to select stl model.Method
@@ -91,6 +92,7 @@ class Backend(QtCore.QObject):
 
         self.model_detection_left.load_mesh(self.model_mesh)
         self.model_detection_right.load_mesh(self.model_mesh)
+        self.mesh_loaded = True
         self.update_model_signal.emit(mesh_data)
     
     def load_model_points(self): 
@@ -128,6 +130,8 @@ class Backend(QtCore.QObject):
             # TODO: try stop and pass old object and then create new object
         self.camera.choose_camera(camera_index)
         self.camera.start()
+        self.camera_connected = True
+        self.camera_connected_signal.emit()
 
     def set_registration_ended(self):
         self.registration_started = False

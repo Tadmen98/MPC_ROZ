@@ -166,7 +166,7 @@ class Model_Registration():
             cv2.waitKey(0)
         
         cv2.destroyWindow("Register model")
-        cv2.destroyWindow("Register preview")
+        cv2.destroyWindow("Registration preview")
         
         self.registered = 0
         self.end_registration = False

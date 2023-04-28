@@ -126,6 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.register_model_btn = QtWidgets.QPushButton(self.frame_loading)
         self.register_model_btn.setObjectName(u"register_model_btn")
+        self.register_model_btn.setDisabled(True)
 
 
         self.camera_select_cb = QtWidgets.QComboBox(self.frame_loading)
@@ -140,6 +141,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.finish_register_model_btn = QtWidgets.QPushButton(self.frame_loading)
         self.finish_register_model_btn.setObjectName(u"finish_register_model_btn")
+        self.finish_register_model_btn.setDisabled(True)
 
         self.combo_box_extractor = QtWidgets.QComboBox(self.frame_loading)
         self.combo_box_extractor.setObjectName(u"combo_box_extractor")
@@ -322,6 +324,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.camera_select_cb.currentIndex()
         ))
         self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
+        self.backend.registration_started_signal.connect(lambda: self.finish_register_model_btn.setDisabled(False))
+        self.backend.registration_ended_signal.connect(lambda: self.finish_register_model_btn.setDisabled(True))
+        self.backend.camera_connected_signal.connect(self.register_enabler)
+        self.backend.update_model_signal.connect(self.register_enabler)
 
         self.combo_box_extractor.currentIndexChanged.connect(lambda: self.backend.set_extractor(self.combo_box_extractor.currentText()))
         self.backend.registration_started_signal.connect(lambda: self.combo_box_extractor.setDisabled(True))
@@ -413,3 +419,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.model_mesh_left.applyTransform(trans_mat,False)
         elif side == "right":
             self.model_mesh_right.applyTransform(trans_mat,False)
+
+    def register_enabler(self):
+        if self.backend.camera_connected and self.backend.mesh_loaded:
+            self.register_model_btn.setDisabled(False)
