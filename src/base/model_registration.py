@@ -51,9 +51,10 @@ class Model_Registration():
         self.extractor_name = "KAZE"
         self.end_registration = False
 
-    def set_parameters(self, save_path, keypoints_count):
+    def set_parameters(self, save_path, keypoints_count, extractor_name):
         self.save_path = save_path
         self.keypoints_count = keypoints_count
+        self.extractor_name = extractor_name
 
     def save(self):
         pass
@@ -155,6 +156,7 @@ class Model_Registration():
         self.points3d.clear()
 
     def stop(self):
+        self.model_points.extractor = self.extractor_name
         self.model_points.save(self.save_path)
 
     def on_mouse_click(self, event, x, y, int, *void):

@@ -12,6 +12,7 @@ class Model_Points():
         self._descriptors_ = [] 
         self._training_img_path_ = None
         self.loaded = False
+        self.extractor = ""
 
 
     def add_corespondence(self, point2d, point3d):
@@ -41,6 +42,7 @@ class Model_Points():
 
         storage.write("points_3d", points3d_array)
         storage.write("points_2d", points2d_array)
+        storage.write("extractor", self.extractor)
         
         index = []
         for point in self._list_keypoints_:
@@ -79,6 +81,8 @@ class Model_Points():
         training_image_path_node = storage.getNode("training_image_path")
         if not training_image_path_node.empty():
             self._training_img_path_ = training_image_path_node.string()
+
+        self.extractor = storage.getNode("extractor").string()
 
         storage.release()
         self.loaded = True

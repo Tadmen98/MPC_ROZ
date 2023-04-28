@@ -143,6 +143,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.combo_box_extractor = QtWidgets.QComboBox(self.frame_loading)
         self.combo_box_extractor.setObjectName(u"combo_box_extractor")
+        self.combo_box_extractor.addItems(self.backend.feature_extractors)
+        self.combo_box_extractor.setCurrentIndex(0)
 
         
         self.gridLayout.addWidget(self.camera_select_cb,            0, 0, 1, 1)
@@ -321,6 +323,9 @@ class MainWindow(QtWidgets.QMainWindow):
         ))
         self.camera_sel_cb_add_items_signal.connect(self.camera_select_cb_add_items)
 
+        self.combo_box_extractor.currentIndexChanged.connect(lambda: self.backend.set_extractor(self.combo_box_extractor.currentText()))
+        self.backend.registration_started_signal.connect(lambda: self.combo_box_extractor.setDisabled(True))
+        self.backend.registration_ended_signal.connect(lambda: self.combo_box_extractor.setDisabled(False))
         
         self.slider_num_keypoints.valueChanged.connect(lambda a: self.value_slider_num_keypoints.setText(str(a)))
         self.slider_ratio_test.valueChanged.connect(lambda a: self.value_slider_ratio_test.setText("{:.2f}".format(a/100)))    

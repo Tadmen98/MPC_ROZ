@@ -66,9 +66,13 @@ class Correspondence_Matcher():
 
         descriptors_frame = None
         descriptors_frame = self.computeDescriptors(frame, keypoints_frame)
+        if descriptors_frame is not None:
+            type_desc = descriptors_frame.dtype
+        else:
+            type_desc = np.uint8
 
         matches = None
-        matches = self._matcher_.knnMatch(descriptors_frame, descriptors_model, 2)
+        matches = self._matcher_.knnMatch(descriptors_frame, descriptors_model.astype(type_desc), 2)
 
         self.ratioTest(matches)
 

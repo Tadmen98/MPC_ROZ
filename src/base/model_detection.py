@@ -75,13 +75,14 @@ class Model_Detection(QtCore.QObject):
         self.pnp_detection = PnP_Problem(self.camera_params)
     
     def update_parameters(self, num_keypoints, ratio_test, iterations_count, 
-                                reprojection_error, confidence, min_inliers):
+                                reprojection_error, confidence, min_inliers, feature_name):
         self.num_keypoints = num_keypoints
         self.ratio_test = ratio_test
         self.iterations_count  = iterations_count 
         self.reprojection_error = reprojection_error
         self.confidence  = confidence 
         self.min_inliers = min_inliers
+        self.feature_name = feature_name
 
         self.detector, self.descriptor = self.create_features(self.feature_name, self.num_keypoints)
         self.matcher.setFeatureDetector(self.detector)                                      
@@ -92,10 +93,9 @@ class Model_Detection(QtCore.QObject):
     def load_mesh(self, model_mesh : Model_Mesh):
         self.model_mesh = model_mesh  # load an object mesh    
 
-    def load_points(self, list_model_points):
-        if list_model_points is not None:
-            self.list_model_points = list_model_points
-            self.model_points_loaded = True
+    def load_points(self, model_points):
+        self.model_points = model_points
+        self.model_points_loaded = True
 
     @threaded
     def camera_slot(self, img):
@@ -110,87 +110,87 @@ class Model_Detection(QtCore.QObject):
         inliers_most = 0
         frame_final = img.copy()
 
-        for model_points in self.list_model_points:
-            # Model info
-            self.list_points3d_model = model_points._list_points3d_in_ 
-            self.descriptors_model = model_points._descriptors_           
-            self.keypoints_model = model_points._list_keypoints_
+        
+        # Model info
+        self.list_points3d_model = self.model_points._list_points3d_in_ 
+        self.descriptors_model = self.model_points._descriptors_           
+        self.keypoints_model = self.model_points._list_keypoints_
 
-            good_measurement = False
+        good_measurement = False
 
-            frame_vis = img.copy()
+        frame_vis = img.copy()
 
-            good_matches = []
-            keypoints_scene = []
+        good_matches = []
+        keypoints_scene = []
 
-            good_matches, keypoints_scene = self.matcher.robustMatch(img, self.descriptors_model, self.keypoints_model)
+        good_matches, keypoints_scene = self.matcher.robustMatch(img, self.descriptors_model, self.keypoints_model)
 
-            # -- Step 2: Find out the 2D/3D correspondences
-            list_points3d_model_match = [] # 3D coordinates found in the scene
-            list_points2d_scene_match = [] # 2D coordinates found in the scene
+        # -- Step 2: Find out the 2D/3D correspondences
+        list_points3d_model_match = [] # 3D coordinates found in the scene
+        list_points2d_scene_match = [] # 2D coordinates found in the scene
 
-            for match_index in range(len(good_matches)):
-                point3d_model = self.list_points3d_model[ good_matches[match_index].trainIdx ]  # 3D point from model
-                point2d_scene = keypoints_scene[ good_matches[match_index].queryIdx ].pt # 2D point from the scene
-                list_points3d_model_match.append(point3d_model)         # add 3D point
-                list_points2d_scene_match.append(point2d_scene)         # add 2D point
+        for match_index in range(len(good_matches)):
+            point3d_model = self.list_points3d_model[ good_matches[match_index].trainIdx ]  # 3D point from model
+            point2d_scene = keypoints_scene[ good_matches[match_index].queryIdx ].pt # 2D point from the scene
+            list_points3d_model_match.append(point3d_model)         # add 3D point
+            list_points2d_scene_match.append(point2d_scene)         # add 2D point
 
-            # Draw outliers
-            draw2DPoints(frame_vis, list_points2d_scene_match, self.red)
+        # Draw outliers
+        draw2DPoints(frame_vis, list_points2d_scene_match, self.red)
 
-            inliers_idx = np.array([])
-            list_points2d_inliers = []
+        inliers_idx = np.array([])
+        list_points2d_inliers = []
 
-            good_measurement = False
+        good_measurement = False
+        
+        if(len(good_matches) >= 4): # solvePnPRANSAC mini 4 points
+            inliers_idx = self.pnp_detection.estimatePoseRANSAC( list_points3d_model_match, list_points2d_scene_match,
+                                            self.pnp_method, inliers_idx,
+                                            self.iterations_count, self.reprojection_error, self.confidence )
+
+
+
+            if inliers_idx is None:
+                inliers_idx = np.array([])
             
-            if(len(good_matches) >= 4): # solvePnPRANSAC mini 4 points
-                inliers_idx = self.pnp_detection.estimatePoseRANSAC( list_points3d_model_match, list_points2d_scene_match,
-                                                self.pnp_method, inliers_idx,
-                                                self.iterations_count, self.reprojection_error, self.confidence )
+            if len(inliers_idx) < inliers_most:
+                return
+            else:
+                inliers_most = len(inliers_idx)
 
+            for inliers_index in range(len(inliers_idx)):
+                n = inliers_idx[inliers_index][0]         # i-inlier
+                point2d = list_points2d_scene_match[n]     # i-inlier point 2D
+                list_points2d_inliers.append(point2d)           # add i-inlier to list
 
+            draw2DPoints(frame_vis, list_points2d_inliers, self.blue)
 
-                if inliers_idx is None:
-                    inliers_idx = np.array([])
-                
-                if len(inliers_idx) < inliers_most:
-                    continue
-                else:
-                    inliers_most = len(inliers_idx)
+            if( len(inliers_idx) >= self.min_inliers):
+                good_measurement = True
+        
+        l = 5
+        pose_points2d = []
 
-                for inliers_index in range(len(inliers_idx)):
-                    n = inliers_idx[inliers_index][0]         # i-inlier
-                    point2d = list_points2d_scene_match[n]     # i-inlier point 2D
-                    list_points2d_inliers.append(point2d)           # add i-inlier to list
+        if(good_measurement):
+            drawObjectMesh(frame_vis, self.model_mesh, self.pnp_detection, self.green)  # draw current pose
 
-                draw2DPoints(frame_vis, list_points2d_inliers, self.blue)
+            pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,0], dtype=np.float64)))  # axis center
+            pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([l,0,0], dtype=np.float64)))  # axis x
+            pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,l,0], dtype=np.float64)))  # axis y
+            pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,l], dtype=np.float64)))  # axis z
+            draw3DCoordinateAxes(frame_vis, pose_points2d)           # draw axes
 
-                if( len(inliers_idx) >= self.min_inliers):
-                    good_measurement = True
+            P_matrix = QtGui.QMatrix4x4([self.pnp_detection._P_matrix_[0,0],self.pnp_detection._P_matrix_[0,1],self.pnp_detection._P_matrix_[0,2],self.pnp_detection._P_matrix_[0,3],
+                                            self.pnp_detection._P_matrix_[1,0],self.pnp_detection._P_matrix_[1,1],self.pnp_detection._P_matrix_[1,2],self.pnp_detection._P_matrix_[1,3],
+                                            self.pnp_detection._P_matrix_[2,0],self.pnp_detection._P_matrix_[2,1],self.pnp_detection._P_matrix_[2,2],self.pnp_detection._P_matrix_[2,3],
+                                            0,0,0,1])
             
-            l = 5
-            pose_points2d = []
-
-            if(good_measurement):
-                drawObjectMesh(frame_vis, self.model_mesh, self.pnp_detection, self.green)  # draw current pose
-
-                pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,0], dtype=np.float64)))  # axis center
-                pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([l,0,0], dtype=np.float64)))  # axis x
-                pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,l,0], dtype=np.float64)))  # axis y
-                pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,l], dtype=np.float64)))  # axis z
-                draw3DCoordinateAxes(frame_vis, pose_points2d)           # draw axes
-
-                P_matrix = QtGui.QMatrix4x4([self.pnp_detection._P_matrix_[0,0],self.pnp_detection._P_matrix_[0,1],self.pnp_detection._P_matrix_[0,2],self.pnp_detection._P_matrix_[0,3],
-                                             self.pnp_detection._P_matrix_[1,0],self.pnp_detection._P_matrix_[1,1],self.pnp_detection._P_matrix_[1,2],self.pnp_detection._P_matrix_[1,3],
-                                             self.pnp_detection._P_matrix_[2,0],self.pnp_detection._P_matrix_[2,1],self.pnp_detection._P_matrix_[2,2],self.pnp_detection._P_matrix_[2,3],
-                                             0,0,0,1])
-                
-                transformation = self.transformation_old*P_matrix
-                self.tranformation_old = P_matrix.inverted()
-                self.pose_transformation_signal.emit(transformation)
+            transformation = self.transformation_old*P_matrix
+            self.tranformation_old = P_matrix.inverted()
+            self.pose_transformation_signal.emit(transformation)
         
     #TODO Tady to chce else větev, která vykreslí starou pózu pokud nebyla detekovaná nová, ale musí to být omezené na pár snímků - jen pro zvýšení robustnosti
-            frame_final = frame_vis.copy()
+        frame_final = frame_vis.copy()
 
         self.detection_update_signal.emit(frame_final, self.side)
         self.calculation_in_progress = False

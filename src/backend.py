@@ -26,15 +26,19 @@ def threaded(fn):
 
 class Backend(QtCore.QObject):
     update_model_signal = QtCore.Signal(MeshData)
+    registration_started_signal = QtCore.Signal()
+    registration_ended_signal = QtCore.Signal()
 
     def __init__(self):
         super(Backend, self).__init__()
+        self.feature_extractors = ["ORB", "KAZE", "AKAZE", "BRISK", "SIFT"]
+        self.selected_extractor = "ORB"
         self.camera_sel_cb_add_items_signal = None
         self.camera = Camera()
         self.config = {}
         self.model_registration = Model_Registration()
         self.model_mesh = Model_Mesh()
-        self.list_model_points = []
+        self.model_points = None
         self.registration_started = False
         self.registration_ended = False
 
@@ -44,6 +48,7 @@ class Backend(QtCore.QObject):
         self.reprojection_error = 2
         self.confidence = 0.95
         self.min_inliers = 10
+        self.feature_name = "ORB"
 
         self.Q = None
         if os.path.exists("config.json"):
@@ -62,6 +67,8 @@ class Backend(QtCore.QObject):
         self.model_detection_right = Model_Detection("right")
         self.camera.image_update_left.connect(self.model_detection_left.camera_slot)
         self.camera.image_update_right.connect(self.model_detection_right.camera_slot)
+
+        
 
     
     def load_model_mesh(self):
@@ -85,21 +92,15 @@ class Backend(QtCore.QObject):
     
     def load_model_points(self): 
         #Open file dialog for choosing a file
-        name = QtWidgets.QFileDialog.getExistingDirectory() 
-        self.list_model_points.clear()
-        files_all = os.listdir(name)
-        files = []
-        for file in files_all:
-            if file.endswith(".yml"):
-                files.append(file)
+        name = QtWidgets.QFileDialog.getOpenFileName() 
 
-        for file in files:
-            model_points = Model_Points()
-            model_points.load(name + "/" + file)        
-            self.list_model_points.append(model_points)
+        self.model_points = Model_Points()
+        self.model_points.load(name[0])    
         
-        self.model_detection_left.load_points(self.list_model_points)
-        self.model_detection_right.load_points(self.list_model_points)
+        self.model_detection_left.load_points(self.model_points)
+        self.model_detection_right.load_points(self.model_points)
+        self.feature_name = self.model_points.extractor
+        self.update_detection_parameters()
 
     
     @threaded
@@ -126,16 +127,17 @@ class Backend(QtCore.QObject):
     def set_registration_ended(self):
         self.registration_started = False
         self.model_registration.stop()
+        self.registration_ended_signal.emit()
 
     def register_model(self):
-        print("HHHHHH")
         if not self.registration_started:
             self.registration_started = True
+            self.registration_started_signal.emit()
             self.name = QtWidgets.QFileDialog.getSaveFileName(None, "Select YML configuration save location", "model.yml", "YML (*.yml)")
             self.name = self.name[0].rstrip(".yml")
             self.iteration = 0
         
-        self.model_registration.set_parameters(self.name + "_" + str(self.iteration) + ".yml", 2000)
+        self.model_registration.set_parameters(self.name + "_" + str(self.iteration) + ".yml", 2000, self.selected_extractor)
         self.model_registration.start(self.img_left, self.model_mesh)
         self.iteration += 1
             
@@ -221,6 +223,9 @@ class Backend(QtCore.QObject):
             self.min_inliers = min_inliers
 
         self.model_detection_left.update_parameters(self.num_keypoints, self.ratio_test, self.iterations_count, 
-                                self.reprojection_error, self.confidence, self.min_inliers)
+                                self.reprojection_error, self.confidence, self.min_inliers, self.feature_name)
         self.model_detection_right.update_parameters(self.num_keypoints, self.ratio_test, self.iterations_count, 
-                                self.reprojection_error, self.confidence, self.min_inliers)
+                                self.reprojection_error, self.confidence, self.min_inliers, self.feature_name)
+        
+    def set_extractor(self, name):
+        self.selected_extractor = name
