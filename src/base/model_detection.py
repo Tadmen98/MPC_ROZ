@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from PySide6 import QtCore, QtGui
 from src.base.pnp_problem import PnP_Problem
+from PySide6.QtGui import QMatrix4x4
 from src.base.model_mesh import Model_Mesh
 from src.base.model_points import Model_Points
 from src.base.correspondence_matcher import Correspondence_Matcher
@@ -185,24 +186,12 @@ class Model_Detection(QtCore.QObject):
             R_matrix = self.pnp_detection._R_matrix_
             t_matrix = self.pnp_detection._t_matrix_
 
-            sy = sqrt(R_matrix[0,0] * R_matrix[0,0] +  R_matrix[1,0] * R_matrix[1,0])
- 
-            singular = sy < 1e-6
-        
-            if  not singular :
-                rot_x = atan2(R_matrix[2,1] , R_matrix[2,2])
-                rot_y = atan2(-R_matrix[2,0], sy)
-                rot_z = atan2(R_matrix[1,0], R_matrix[0,0])
-            else :
-                rot_x = atan2(-R_matrix[1,2], R_matrix[1,1])
-                rot_y = atan2(-R_matrix[2,0], sy)
-                rot_z = 0
-
-            transformation = Transform3D()
-            transformation.rotate(rot_x, True, False, False)
-            transformation.rotate(rot_y, False, True, False)
-            transformation.rotate(rot_z, False, False, True)
-            transformation.translate(t_matrix[0],t_matrix[1],t_matrix[2])
+            mat = QMatrix4x4(R_matrix[0,0],R_matrix[0,1],R_matrix[0,2],t_matrix[0,0],
+                             R_matrix[1,0],R_matrix[1,1],R_matrix[1,2],t_matrix[1,0],
+                             R_matrix[2,0],R_matrix[2,1],R_matrix[2,2],t_matrix[2,0],
+                             0,0,0,1)
+            
+            transformation = Transform3D(mat)
             self.pose_transformation_signal.emit(transformation)
         
     #TODO Tady to chce else větev, která vykreslí starou pózu pokud nebyla detekovaná nová, ale musí to být omezené na pár snímků - jen pro zvýšení robustnosti
