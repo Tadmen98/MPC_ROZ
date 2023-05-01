@@ -36,6 +36,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.backend.model_detection_left.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "left"))
         self.backend.model_detection_right.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "right"))
+
+        self.startup_functions()
         
     def setup_ui(self):
         if not self.objectName():
@@ -458,3 +460,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def register_enabler(self):
         if self.backend.camera_connected and self.backend.mesh_loaded:
             self.register_model_btn.setDisabled(False)
+
+    def startup_functions(self):
+        self.backend.find_aviable_cameras()
