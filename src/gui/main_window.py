@@ -19,6 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.backend = backend
+        self.translate_old = (0,0,0)
 
         self.img_not_connected = QtGui.QImage("images/not_connected.png")
         self.model_mesh_left = GLMeshItem()
@@ -30,6 +31,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.connect_signals()
         self.camera_disconnected()
 
+        self.point_mesh = None
+        
         self.backend.model_detection_left.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "left"))
         self.backend.model_detection_right.pose_transformation_signal.connect(lambda trans: self.transform_3d_view(trans, "right"))
         
@@ -148,6 +151,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.combo_box_extractor.addItems(self.backend.feature_extractors)
         self.combo_box_extractor.setCurrentIndex(0)
 
+        self.btn_helper_scale_up = QtWidgets.QPushButton(self.frame_loading)
+        self.btn_helper_scale_up.setObjectName(u"btn_helper_scale_up")
+        self.btn_helper_scale_up.setText("Helper scale up")
+        self.btn_helper_scale_down = QtWidgets.QPushButton(self.frame_loading)
+        self.btn_helper_scale_up.setObjectName(u"btn_helper_scale_up")
+        self.btn_helper_scale_down.setText("Helper scale down")
+
         
         self.gridLayout.addWidget(self.camera_select_cb,            0, 0, 1, 1)
         self.gridLayout.addWidget(self.find_all_cameras_btn,        0, 1, 1, 1)
@@ -159,6 +169,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gridLayout.addWidget(self.load_points_btn,             1, 2, 1, 2)
         self.gridLayout.addWidget(self.register_model_btn,          2, 2, 1, 2)
         self.gridLayout.addWidget(self.finish_register_model_btn,   3, 2, 1, 2)
+        self.gridLayout.addWidget(self.btn_helper_scale_down,       4, 0, 1, 1)
+        self.gridLayout.addWidget(self.btn_helper_scale_up,         4, 1, 1, 1)
 
         self.verticalLayout.addWidget(self.frame_loading)
         #__________________________________________
@@ -347,12 +359,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.slider_confidence.valueChanged.connect(lambda a: self.backend.update_detection_parameters(confidence=a/100))
         self.slider_min_inliers.valueChanged.connect(lambda a: self.backend.update_detection_parameters(min_inliers=int(a)))
 
+        self.backend.model_registration.registration_update_signal.connect(self.show_current_point)
 
+    def show_current_point(self, x, y, z):
+        if self.point_mesh is None:
+            stl_mesh = mesh.Mesh.from_file("images/point.stl")
+            points = stl_mesh.points.reshape(-1, 3)
+            faces = np.arange(points.shape[0]).reshape(-1, 3)
+            mesh_data = MeshData(vertexes=points, faces=faces)
+            self.point_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=True, drawEdges=True, edgeColor=(1, 0, 0, 1),faceColor=(1, 0, 0, 1))
+            self.point_mesh.scale(0.1,0.1,0.1)
+            self.viewer_3D_left.addItem(self.point_mesh)
+            self.btn_helper_scale_up.clicked.connect(lambda: self.point_mesh.scale(1.5,1.5,1.5))
+            self.btn_helper_scale_down.clicked.connect(lambda: self.point_mesh.scale(0.5,0.5,0.5))
 
+        
+        self.point_mesh.translate(self.translate_old[0], self.translate_old[1], self.translate_old[2])
+        self.translate_old = (-x,-y,-z)
+        self.point_mesh.translate(x,y,z)
+
+        self.viewer_3D_left.show()
 
     def update_model_slot(self, mesh_data : MeshData):
         self.model_mesh_left = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
         self.model_mesh_right = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=False, drawEdges=True, edgeColor=(0, 1, 0, 1))
+        
         
         self.viewer_3D_left.clear()
         self.viewer_3D_left.addItem(self.model_mesh_left)

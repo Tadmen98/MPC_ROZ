@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from PySide6 import QtCore, QtGui
 from src.base.correspondence_matcher import Correspondence_Matcher
 from src.base.draw_functions import *
 from src.base.model_mesh import Model_Mesh
@@ -7,8 +8,11 @@ from src.base.model_points import Model_Points
 from src.base.pnp_problem import PnP_Problem
 
 
-class Model_Registration():
+class Model_Registration(QtCore.QObject):
+    registration_update_signal = QtCore.Signal(float,float,float)
+
     def __init__(self, ):
+        super(Model_Registration, self).__init__()
         self.end_registration = False
         self.cancel_registration = False
 
@@ -32,8 +36,8 @@ class Model_Registration():
         self.keypoints_count = 0
         self.extractor_name = "KAZE"
         
-        preview_parameters = [50,   # fx
-                            50,  # fy
+        preview_parameters = [10,   # fx
+                            10,  # fy
                             250,      # cx
                             250]
         self.pnp_preview = PnP_Problem(preview_parameters)
@@ -114,6 +118,7 @@ class Model_Registration():
                 drawCounter(img_vis, self.registered, self.to_be_registered, green)
                 break
             
+            self.registration_update_signal.emit(self.model_mesh.vertices[self.registered][0], self.model_mesh.vertices[self.registered][1], self.model_mesh.vertices[self.registered][2])
             draw2DPoints(img_preview_copy, [points_preview[self.registered-1]], green)
             cv2.imshow("Register model", img_vis)
             cv2.imshow("Registration preview", img_preview_copy)

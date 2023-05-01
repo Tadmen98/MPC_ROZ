@@ -125,7 +125,6 @@ class Model_Detection(QtCore.QObject):
 
         good_matches, keypoints_scene = self.matcher.robustMatch(img, self.descriptors_model, self.keypoints_model)
 
-        # -- Step 2: Find out the 2D/3D correspondences
         list_points3d_model_match = [] # 3D coordinates found in the scene
         list_points2d_scene_match = [] # 2D coordinates found in the scene
 
