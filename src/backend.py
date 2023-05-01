@@ -79,7 +79,10 @@ class Backend(QtCore.QObject):
         """
 
         #Open file dialog for choosing a file
-        name = QtWidgets.QFileDialog.getOpenFileName() 
+        name = QtWidgets.QFileDialog.getOpenFileName(
+            caption="Load model mesh",
+            filter="Standard Triangle Language (*.stl)"
+        )
         if name[0] == "":
             return
         
@@ -98,7 +101,10 @@ class Backend(QtCore.QObject):
     
     def load_model_points(self): 
         #Open file dialog for choosing a file
-        name = QtWidgets.QFileDialog.getOpenFileName() 
+        name = QtWidgets.QFileDialog.getOpenFileName(
+            caption="Load model points",
+            filter="Yet another markup language (*.yml)"
+        )
         if name[0] == "":
             return
 
