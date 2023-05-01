@@ -6,8 +6,10 @@ from src.base.model_mesh import Model_Mesh
 from src.base.model_points import Model_Points
 from src.base.correspondence_matcher import Correspondence_Matcher
 from src.base.draw_functions import *
+from pyqtgraph import Transform3D
 from threading import Thread
 from scipy.spatial.transform import Rotation
+from math import atan2,sqrt
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -23,7 +25,7 @@ def threaded(fn):
 
 class Model_Detection(QtCore.QObject):
     detection_update_signal = QtCore.Signal(cv2.Mat, str)
-    pose_transformation_signal = QtCore.Signal(QtGui.QMatrix4x4)
+    pose_transformation_signal = QtCore.Signal(Transform3D)
 
     def __init__(self, side):
         super(Model_Detection, self).__init__()
@@ -33,10 +35,6 @@ class Model_Detection(QtCore.QObject):
         self.calculation_in_progress = False
         self.model_points = Model_Points()
         self.model_mesh = Model_Mesh() 
-        self.transformation_old = QtGui.QMatrix4x4([1,0,0,0,
-                                                    0,1,0,0,
-                                                    0,0,1,0,
-                                                    0,0,0,1])
         # Intrinsic camera params from vendor
         self.camera_params = [ 385.395,   # fx
                         385.3225,  # fy
@@ -184,8 +182,27 @@ class Model_Detection(QtCore.QObject):
                                             self.pnp_detection._P_matrix_[2,0],self.pnp_detection._P_matrix_[2,1],self.pnp_detection._P_matrix_[2,2],self.pnp_detection._P_matrix_[2,3],
                                             0,0,0,1])
             
-            transformation = self.transformation_old*P_matrix
-            self.tranformation_old = P_matrix.inverted()
+            R_matrix = self.pnp_detection._R_matrix_
+            t_matrix = self.pnp_detection._t_matrix_
+
+            sy = sqrt(R_matrix[0,0] * R_matrix[0,0] +  R_matrix[1,0] * R_matrix[1,0])
+ 
+            singular = sy < 1e-6
+        
+            if  not singular :
+                rot_x = atan2(R_matrix[2,1] , R_matrix[2,2])
+                rot_y = atan2(-R_matrix[2,0], sy)
+                rot_z = atan2(R_matrix[1,0], R_matrix[0,0])
+            else :
+                rot_x = atan2(-R_matrix[1,2], R_matrix[1,1])
+                rot_y = atan2(-R_matrix[2,0], sy)
+                rot_z = 0
+
+            transformation = Transform3D()
+            transformation.rotate(rot_x, True, False, False)
+            transformation.rotate(rot_y, False, True, False)
+            transformation.rotate(rot_z, False, False, True)
+            transformation.translate(t_matrix[0],t_matrix[1],t_matrix[2])
             self.pose_transformation_signal.emit(transformation)
         
     #TODO Tady to chce else větev, která vykreslí starou pózu pokud nebyla detekovaná nová, ale musí to být omezené na pár snímků - jen pro zvýšení robustnosti

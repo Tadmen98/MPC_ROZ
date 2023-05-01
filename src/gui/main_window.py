@@ -4,6 +4,7 @@ from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtCore import Signal, Slot, Qt
 import numpy as np
 from pyqtgraph.opengl import GLViewWidget, MeshData, GLMeshItem,GLScatterPlotItem
+from pyqtgraph import Transform3D
 from pyqtgraph import Vector
 from stl import mesh
 import cv2
@@ -445,11 +446,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.basic_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
         self.augumented_preview_label_right.setPixmap(QPixmap.fromImage(scaled_qt_img))
 
-    def transform_3d_view(self, trans_mat : QtGui.QMatrix4x4, side):
+    def transform_3d_view(self, transform, side):
+
         if side == "left":
-            self.model_mesh_left.applyTransform(trans_mat,False)
+            self.model_mesh_left.resetTransform()
+            self.model_mesh_left.applyTransform(transform, local=True)
         elif side == "right":
-            self.model_mesh_right.applyTransform(trans_mat,False)
+            self.model_mesh_right.resetTransform()
+            self.model_mesh_right.applyTransform(transform, local=True)
 
     def register_enabler(self):
         if self.backend.camera_connected and self.backend.mesh_loaded:
