@@ -8,14 +8,6 @@ thickness_font = 2
 lineType = 8
 radius = 4
 
-def drawQuestion(image, point, color):
-    x = str(point[0])
-    y = str(point[1])
-    z = str(point[2])
-
-    text = " Select point (" + x + ","  + y + "," + z + ")"
-    cv2.putText(image, text, (25,50), fontFace, fontScale, color, thickness_font, 8)
-
 def drawText(image, text, color):
     cv2.putText(image, text, (25,50), fontFace, fontScale, color, thickness_font, 8)
 
@@ -52,41 +44,6 @@ def draw2DPoints(image, list_points, color):
         point_2d = (int(x),int(y))
 
         cv2.circle(image, point_2d, radius, color, -1, lineType )
-
-
-def drawArrow( image, p, q, color, arrowMagnitude, thickness, line_type = cv2.FILLED, shift = 0):
-    cv2.line(image, p, q, color, thickness, line_type, shift)
-    PI = 3.14159265
-    
-    angle = atan2(float(p[1]-q[1]), float(p[0]-q[0]))
-    p = list(p)
-    q = list(q)
-    
-    p[0] = int( q[0] +  arrowMagnitude * cos(angle + PI/4))
-    p[1] = int( q[1] +  arrowMagnitude * sin(angle + PI/4))
-    
-    cv2.line(image, p, q, color, thickness, line_type, shift)
-    
-    p[0] = int( q[0] +  arrowMagnitude * cos(angle - PI/4))
-    p[1] = int( q[1] +  arrowMagnitude * sin(angle - PI/4))
-    
-    cv2.line(image, p, q, color, thickness, line_type, shift)
-
-def draw3DCoordinateAxes(image, list_points2d):
-    red = (0, 0, 255)
-    green = (0,255,0)
-    blue = (255,0,0)
-    black = (0,0,0)
-
-    origin = list_points2d[0]
-    pointX = list_points2d[1]
-    pointY = list_points2d[2]
-    pointZ = list_points2d[3]
-
-    drawArrow(image, origin, pointX, red, 9, 2)
-    drawArrow(image, origin, pointY, green, 9, 2)
-    drawArrow(image, origin, pointZ, blue, 9, 2)
-    cv2.circle(image, origin, int(radius/2), black, -1, lineType )
 
 def drawObjectMesh(image, model_mesh, pnp, color):
     list_triangles = model_mesh.triangles

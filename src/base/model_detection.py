@@ -176,7 +176,6 @@ class Model_Detection(QtCore.QObject):
             pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([l,0,0], dtype=np.float64)))  # axis x
             pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,l,0], dtype=np.float64)))  # axis y
             pose_points2d.append(self.pnp_detection.backproject3DPoint(np.array([0,0,l], dtype=np.float64)))  # axis z
-            draw3DCoordinateAxes(frame_vis, pose_points2d)           # draw axes
 
             P_matrix = QtGui.QMatrix4x4([self.pnp_detection._P_matrix_[0,0],self.pnp_detection._P_matrix_[0,1],self.pnp_detection._P_matrix_[0,2],self.pnp_detection._P_matrix_[0,3],
                                             self.pnp_detection._P_matrix_[1,0],self.pnp_detection._P_matrix_[1,1],self.pnp_detection._P_matrix_[1,2],self.pnp_detection._P_matrix_[1,3],
