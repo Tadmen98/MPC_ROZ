@@ -363,6 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.slider_min_inliers.valueChanged.connect(lambda a: self.backend.update_detection_parameters(min_inliers=int(a)))
 
         self.backend.model_registration.registration_update_signal.connect(self.show_current_point)
+        self.backend.update_feature_ex_lab_signal.connect(self.update_feature_extractor_lab)
 
     def show_current_point(self, x, y, z):
         if self.point_mesh is None:
@@ -463,3 +464,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def startup_functions(self):
         self.backend.find_aviable_cameras()
+
+    def update_feature_extractor_lab(self, name):
+        self.label_active_descriptor.setText(f"Current descriptor: {name}")
