@@ -29,6 +29,7 @@ class Backend(QtCore.QObject):
     registration_started_signal = QtCore.Signal()
     registration_ended_signal = QtCore.Signal()
     camera_connected_signal = QtCore.Signal()
+    update_feature_ex_lab_signal = QtCore.Signal(str)
 
     def __init__(self):
         super(Backend, self).__init__()
@@ -78,7 +79,10 @@ class Backend(QtCore.QObject):
         """
 
         #Open file dialog for choosing a file
-        name = QtWidgets.QFileDialog.getOpenFileName() 
+        name = QtWidgets.QFileDialog.getOpenFileName(
+            caption="Load model mesh",
+            filter="Standard Triangle Language (*.stl)"
+        )
         if name[0] == "":
             return
         
@@ -97,7 +101,10 @@ class Backend(QtCore.QObject):
     
     def load_model_points(self): 
         #Open file dialog for choosing a file
-        name = QtWidgets.QFileDialog.getOpenFileName() 
+        name = QtWidgets.QFileDialog.getOpenFileName(
+            caption="Load model points",
+            filter="Yet another markup language (*.yml)"
+        )
         if name[0] == "":
             return
 
@@ -107,6 +114,7 @@ class Backend(QtCore.QObject):
         self.model_detection_left.load_points(self.model_points)
         self.model_detection_right.load_points(self.model_points)
         self.feature_name = self.model_points.extractor
+        self.update_feature_ex_lab_signal.emit(self.feature_name)
         self.update_detection_parameters()
 
     
