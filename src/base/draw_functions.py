@@ -11,6 +11,7 @@ radius = 4
 def drawText(image, text, color):
     cv2.putText(image, text, (25,100), fontFace, fontScale, color, thickness_font, 8)
 
+
 def drawText2(image, text, color):
     cv2.putText(image, text, (25,75), fontFace, fontScale, color, thickness_font, 8)
 
