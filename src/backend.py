@@ -162,7 +162,7 @@ class Backend(QtCore.QObject):
         
         self.model_registration.set_parameters(self.name + ".yml", 2000, self.selected_extractor)
         self.model_registration.start(self.img_left, self.model_mesh)
-        self.iteration += 1
+        
 
     def disconnect_camera(self):
         self.camera.stop()
