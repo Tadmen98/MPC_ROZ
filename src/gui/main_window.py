@@ -375,7 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.point_mesh = GLMeshItem(meshdata=mesh_data, smooth=True, drawFaces=True, drawEdges=True, edgeColor=(1, 0, 0, 1),faceColor=(1, 0, 0, 1))
             self.point_mesh.scale(0.1,0.1,0.1)
             self.viewer_3D_left.addItem(self.point_mesh)
-            self.slider_helper_scale.valueChanged.connect(lambda val: self.set_helper_scale(val/200))
+            self.slider_helper_scale.valueChanged.connect(lambda val: self.set_helper_scale(val/2000))
 
         
         self.point_mesh.resetTransform()

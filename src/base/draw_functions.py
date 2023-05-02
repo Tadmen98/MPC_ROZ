@@ -9,7 +9,7 @@ lineType = 8
 radius = 4
 
 def drawText(image, text, color):
-    cv2.putText(image, text, (25,50), fontFace, fontScale, color, thickness_font, 8)
+    cv2.putText(image, text, (25,100), fontFace, fontScale, color, thickness_font, 8)
 
 def drawText2(image, text, color):
     cv2.putText(image, text, (25,75), fontFace, fontScale, color, thickness_font, 8)
@@ -18,7 +18,7 @@ def drawCounter(image, n, n_max, color):
     n_str = str(n)
     n_max_str = str(n_max)
     text = n_str + " of " + n_max_str + " points"
-    cv2.putText(image, text, (500,50), fontFace, fontScale, color, thickness_font, 8)
+    cv2.putText(image, text, (50,50), fontFace, fontScale, color, thickness_font, 8)
 
 def drawPoints( image, list_points_2d, list_points_3d, color):
     for i in range(len(list_points_2d)):
@@ -31,11 +31,9 @@ def drawPoints( image, list_points_2d, list_points_3d, color):
         x = str(point_3d[0])
         y = str(point_3d[1])
         z = str(point_3d[2])
-        text = "P" + idx + " (" + x + "," + y + "," + z +")"
 
         point_2d[0] = point_2d[0] + 10
         point_2d[1] = point_2d[1] - 10
-        cv2.putText(image, text, point_2d, fontFace, fontScale*0.5, color, thickness_font, 8)
 
 def draw2DPoints(image, list_points, color):
     for i in range(len(list_points)):

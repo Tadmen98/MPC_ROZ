@@ -114,6 +114,9 @@ class Model_Registration(QtCore.QObject):
             keypoints_model = matcher.computeKeyPoints(img)
             descriptors = matcher.computeDescriptors(img, keypoints_model)
 
+            list_points_out = []
+            list_points_in = []
+            
             for i in range(len(keypoints_model)):
                 point2d = np.array(keypoints_model[i].pt)
                 point3d = None
@@ -122,14 +125,13 @@ class Model_Registration(QtCore.QObject):
                     self.model_points.add_corespondence(point2d, point3d)
                     self.model_points.add_descriptor(descriptors[i])
                     self.model_points.add_keypoint(keypoints_model[i])
+                    list_points_in.append(point2d)
                 else:
                     self.model_points.add_outlier(point2d)
+                    list_points_out.append(point2d)
             
             img_vis = img.copy()
 
-            # The list of the points2d of the model
-            list_points_in = self.model_points.points2d_in
-            list_points_out = self.model_points.points2d_out
 
             num = str(len(list_points_in))
             text = "There are " + num + " inliers"
