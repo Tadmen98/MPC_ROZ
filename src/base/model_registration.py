@@ -35,13 +35,6 @@ class Model_Registration(QtCore.QObject):
         self.save_path = ""
         self.keypoints_count = 0
         self.extractor_name = "KAZE"
-        
-        preview_parameters = [10,   # fx
-                            10,  # fy
-                            250,      # cx
-                            250]
-        self.pnp_preview = PnP_Problem(preview_parameters)
-        self.pnp_preview._P_matrix_ = np.matrix([[1,0,0,0],[0,1,0,0],[0,0,1,0]])
 
     def is_registrable(self):
         return (self.registered < self.to_be_registered)
@@ -83,23 +76,14 @@ class Model_Registration(QtCore.QObject):
         cv2.namedWindow("Register model", cv2.WINDOW_KEEPRATIO)
         cv2.setMouseCallback("Register model", self.on_mouse_click, 0)
         
-        cv2.namedWindow("Registration preview", cv2.WINDOW_KEEPRATIO)
-        img_preview = cv2.imread("images/preview_background.png")
         img_vis = None
 
         red = (0, 0, 255)
         green = (0,255,0)
         blue = (255,0,0)
-        
-        points_preview = []
-        for vertex in self.model_mesh.vertices:
-            points_preview.append(self.pnp_preview.backproject3DPoint(vertex))
-        draw2DPoints(img_preview, points_preview, red)
-        drawObjectMesh(img_preview,self.model_mesh,self.pnp_preview,blue)
 
         while ( cv2.waitKey(30) < 0 ):
             img_vis = img.copy()
-            img_preview_copy = img_preview.copy()
 
             list_points2d = self.points2d
             list_points3d = self.points3d
@@ -107,11 +91,6 @@ class Model_Registration(QtCore.QObject):
             drawPoints(img_vis, list_points2d, list_points3d, red)
             n_regist = self.registered
             if (not self.end_registration and n_regist < len(self.pts)):
-                n_regist = self.registered
-                n_vertex = self.pts[n_regist]
-                current_point3d = model_mesh.getVertex(n_vertex-1)
-
-                drawQuestion(img_vis, current_point3d, green)
                 drawCounter(img_vis, self.registered, self.to_be_registered, red)
             else:
                 drawText(img_vis, "Registration Complete", green)
@@ -119,9 +98,7 @@ class Model_Registration(QtCore.QObject):
                 break
             
             self.registration_update_signal.emit(self.model_mesh.vertices[self.registered][0], self.model_mesh.vertices[self.registered][1], self.model_mesh.vertices[self.registered][2])
-            draw2DPoints(img_preview_copy, [points_preview[self.registered-1]], green)
             cv2.imshow("Register model", img_vis)
-            cv2.imshow("Registration preview", img_preview_copy)
 
         list_points2d = self.points2d
         list_points3d = self.points3d
@@ -137,6 +114,9 @@ class Model_Registration(QtCore.QObject):
             keypoints_model = matcher.computeKeyPoints(img)
             descriptors = matcher.computeDescriptors(img, keypoints_model)
 
+            list_points_out = []
+            list_points_in = []
+            
             for i in range(len(keypoints_model)):
                 point2d = np.array(keypoints_model[i].pt)
                 point3d = None
@@ -145,14 +125,13 @@ class Model_Registration(QtCore.QObject):
                     self.model_points.add_corespondence(point2d, point3d)
                     self.model_points.add_descriptor(descriptors[i])
                     self.model_points.add_keypoint(keypoints_model[i])
+                    list_points_in.append(point2d)
                 else:
                     self.model_points.add_outlier(point2d)
+                    list_points_out.append(point2d)
             
             img_vis = img.copy()
 
-            # The list of the points2d of the model
-            list_points_in = self.model_points.points2d_in
-            list_points_out = self.model_points.points2d_out
 
             num = str(len(list_points_in))
             text = "There are " + num + " inliers"
@@ -171,7 +150,6 @@ class Model_Registration(QtCore.QObject):
             cv2.waitKey(0)
         
         cv2.destroyWindow("Register model")
-        cv2.destroyWindow("Registration preview")
         
         self.registered = 0
         self.end_registration = False

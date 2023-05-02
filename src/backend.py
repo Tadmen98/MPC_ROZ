@@ -11,7 +11,6 @@ import os
 from src.base.model_registration import Model_Registration
 from src.base.model_mesh import Model_Mesh
 from src.base.model_points import Model_Points
-from src.gui.custom_dialog import CustomDialog
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -31,7 +30,6 @@ class Backend(QtCore.QObject):
     registration_ended_signal = QtCore.Signal()
     camera_connected_signal = QtCore.Signal()
     update_feature_ex_lab_signal = QtCore.Signal(str)
-    # custom_dialog_signal = QtCore.Signal(str, str)
 
     def __init__(self):
         super(Backend, self).__init__()
@@ -153,20 +151,13 @@ class Backend(QtCore.QObject):
             self.name = QtWidgets.QFileDialog.getSaveFileName(None, "Select YML configuration save location", "model.yml", "YML (*.yml)")
             if self.name[0] == "":
                 return
-            if not self.name[0].isascii():
-                dlg = CustomDialog("Warning: Non ascii path", "Please try again with ascii path")
-                dlg.exec()
-                return
             self.registration_started_signal.emit()
             self.registration_started = True
             self.name = self.name[0].rstrip(".yml")
-            self.iteration = 0
         
-        self.model_registration.set_parameters(self.name + "_" + str(self.iteration) + ".yml", 2000, self.selected_extractor)
+        self.model_registration.set_parameters(self.name + ".yml", 2000, self.selected_extractor)
         self.model_registration.start(self.img_left, self.model_mesh)
         self.iteration += 1
-            
-
 
     def disconnect_camera(self):
         self.camera.stop()
