@@ -11,6 +11,7 @@ import os
 from src.base.model_registration import Model_Registration
 from src.base.model_mesh import Model_Mesh
 from src.base.model_points import Model_Points
+from src.gui.custom_dialog import CustomDialog
 
 def threaded(fn):
     """To use as decorator to make a function call threaded.
@@ -150,6 +151,10 @@ class Backend(QtCore.QObject):
         if not self.registration_started:
             self.name = QtWidgets.QFileDialog.getSaveFileName(None, "Select YML configuration save location", "model.yml", "YML (*.yml)")
             if self.name[0] == "":
+                return
+            if not self.name[0].isascii():
+                dlg = CustomDialog("Warning: Non ascii path", "Please try again with ascii path")
+                dlg.exec()
                 return
             self.registration_started_signal.emit()
             self.registration_started = True
